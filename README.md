@@ -18,3 +18,4 @@ A clean and customizable keystroke display HUD for Minecraft. Shows your WASD ke
 
 <h1>Preview</h1>
 
+<img src="https://github.com/ItsPasi/clean-keystrokes/blob/master/docs/Video%20Example.gif?raw=true"  alt="Video-Example">
