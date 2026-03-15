@@ -1,0 +1,32 @@
+{
+	"schemaVersion": 1,
+	"id": "clean-keystrokes",
+	"version": "${version}",
+	"name": "Clean Keystrokes",
+	"description": "Displays your keystrokes and mouse movement on screen with a customizable HUD.",
+	"authors": [
+		"Pasi"
+	],
+	"contact": {},
+	"license": "LGPL-3.0",
+	"icon": "assets/clean-keystrokes/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"client": [
+			"com.clean.keystrokes.CleanKeyStrokes"
+		],
+		"modmenu": [
+			"com.clean.keystrokes.display.config.ModMenuIntegration"
+		]
+	},
+	"mixins": [
+		"clean-keystrokes.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.18.4",
+		"minecraft": "~1.21.11",
+		"java": ">=21",
+		"fabric-api": "*",
+		"yet_another_config_lib_v3": ">=3.8.2+1.21.11-fabric"
+	}
+}
