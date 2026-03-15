@@ -5,7 +5,7 @@
 
 A clean and customizable keystroke display HUD for Minecraft. Shows your WASD keys, spacebar, sneak, sprint, and mouse buttons with a live mouse movement tracker.
 
-<img src="https://github.com/ItsPasi/clean-keystrokes/blob/master/docs/Mod%20Banner.png" alt="Clean-Keystrokes-Banner">
+<img src="https://github.com/ItsPasi/clean-keystrokes/blob/master/docs/Mod%20Banner.png?raw=true" alt="Clean-Keystrokes-Banner">
 
 <h1>Features</h1>
 
