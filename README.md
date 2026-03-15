@@ -1,5 +1,5 @@
 <p align="center">
-    <img src="">
+    <img src="https://github.com/ItsPasi/clean-keystrokes/blob/master/docs/Mod%20Icon%20Small%20Round.png?raw=true">
     <h1 align="center">Clean Keystrokes</h1>
 </p>
 
@@ -9,4 +9,4 @@ The mod also allows for custom frame limits up to 1000 FPS.
 
 The FPS slider in Minecraft now includes a new "FPS-Sync" option at the leftmost position. Select it to enable the mod.
 
-<img src="">
+<img src="https://github.com/ItsPasi/clean-keystrokes/blob/master/docs/Mod%20Banner.png">
