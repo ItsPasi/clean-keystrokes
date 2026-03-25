@@ -1,10 +1,10 @@
 {
 	"required": true,
 	"package": "com.clean.keystrokes.mixin",
-	"compatibilityLevel": "JAVA_21",
+	"compatibilityLevel": "JAVA_25",
 	"client": [
 		"CameraMovementMixin",
-		"MouseClickMixin"
+		"MouseHandlerClickMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

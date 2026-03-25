@@ -1,6 +1,6 @@
 package com.clean.keystrokes.display.util;
 
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 public class MouseTracker {
 
@@ -53,7 +53,7 @@ public class MouseTracker {
     }
 
     public static void updateRenderPos(int areaX, int areaY, int areaW, int areaH, int dotSizeGui, float delta) {
-        double scale   = MinecraftClient.getInstance().getWindow().getScaleFactor();
+        double scale   = Minecraft.getInstance().getWindow().getGuiScale();
         double radiusX = (areaW - dotSizeGui) * scale / 2.0;
         double radiusY = (areaH - dotSizeGui) * scale / 2.0;
 

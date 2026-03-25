@@ -1,7 +1,7 @@
 package com.clean.keystrokes.display.hud;
 
 import com.clean.keystrokes.display.config.KeystrokeConfig;
-import net.minecraft.client.MinecraftClient;
+import net.minecraft.client.Minecraft;
 
 public final class HudLayout {
 
@@ -34,9 +34,9 @@ public final class HudLayout {
     public final int stripRmbX,    stripRmbW;
 
     public HudLayout(KeystrokeConfig cfg) {
-        MinecraftClient client = MinecraftClient.getInstance();
-        int screenW = client.getWindow().getScaledWidth();
-        int screenH = client.getWindow().getScaledHeight();
+        Minecraft client = Minecraft.getInstance();
+        int screenW = client.getWindow().getGuiScaledWidth();
+        int screenH = client.getWindow().getGuiScaledHeight();
 
         int kS = KEY_SIZE;
         int g  = GAP;

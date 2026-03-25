@@ -4,8 +4,8 @@ import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.text.Text;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 
 public class ModMenuIntegration implements ModMenuApi {
 
@@ -25,11 +25,11 @@ public class ModMenuIntegration implements ModMenuApi {
         KeystrokeConfig cfg = KeystrokeConfig.get();
 
         return YetAnotherConfigLib.createBuilder()
-                .title(Text.literal("Clean Keystroke Settings"))
+                .title(Component.literal("Clean Keystroke Settings"))
                 .category(ConfigCategory.createBuilder()
-                        .name(Text.literal("General"))
+                        .name(Component.literal("General"))
                         .option(Option.<KeystrokeConfig.CornerPosition>createBuilder()
-                                .name(Text.literal("Position"))
+                                .name(Component.literal("Position"))
                                 .binding(KeystrokeConfig.CornerPosition.TOP_RIGHT,
                                         () -> cfg.position,
                                         v -> cfg.position = v)
@@ -37,40 +37,40 @@ public class ModMenuIntegration implements ModMenuApi {
                                         .enumClass(KeystrokeConfig.CornerPosition.class))
                                 .build())
                         .option(Option.<Boolean>createBuilder()
-                                .name(Text.literal("Text Shadow"))
+                                .name(Component.literal("Text Shadow"))
                                 .binding(false, () -> cfg.textShadow, v -> cfg.textShadow = v)
                                 .controller(TickBoxControllerBuilder::create)
                                 .build())
                         .option(Option.<Boolean>createBuilder()
-                                .name(Text.literal("Press Animation"))
+                                .name(Component.literal("Press Animation"))
                                 .binding(true, () -> cfg.pressAnimation, v -> cfg.pressAnimation = v)
                                 .controller(TickBoxControllerBuilder::create)
                                 .build())
                         .option(Option.<Boolean>createBuilder()
-                                .name(Text.literal("Rainbow Text"))
+                                .name(Component.literal("Rainbow Text"))
                                 .binding(false, () -> cfg.rainbowText, v -> cfg.rainbowText = v)
                                 .controller(TickBoxControllerBuilder::create)
                                 .build())
                         .build())
                 .category(ConfigCategory.createBuilder()
-                        .name(Text.literal("Colors"))
+                        .name(Component.literal("Colors"))
                         .option(Option.<java.awt.Color>createBuilder()
-                                .name(Text.literal("Key Text Color"))
+                                .name(Component.literal("Key Text Color"))
                                 .binding(intToColor(0xFFFFFFFF), () -> intToColor(cfg.keyColor), v -> cfg.keyColor = colorToInt(v))
                                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
                                 .build())
                         .option(Option.<java.awt.Color>createBuilder()
-                                .name(Text.literal("Key Background Color"))
+                                .name(Component.literal("Key Background Color"))
                                 .binding(intToColor(0xAA000000), () -> intToColor(cfg.keyBackgroundColor), v -> cfg.keyBackgroundColor = colorToInt(v))
                                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
                                 .build())
                         .option(Option.<java.awt.Color>createBuilder()
-                                .name(Text.literal("Pressed Key Text Color"))
+                                .name(Component.literal("Pressed Key Text Color"))
                                 .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyPressedColor), v -> cfg.keyPressedColor = colorToInt(v))
                                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
                                 .build())
                         .option(Option.<java.awt.Color>createBuilder()
-                                .name(Text.literal("Pressed Key Background Color"))
+                                .name(Component.literal("Pressed Key Background Color"))
                                 .binding(intToColor(0xAAFFFFFF), () -> intToColor(cfg.keyPressedBackgroundColor), v -> cfg.keyPressedBackgroundColor = colorToInt(v))
                                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
                                 .build())

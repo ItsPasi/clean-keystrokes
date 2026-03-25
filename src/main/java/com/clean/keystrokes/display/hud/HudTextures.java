@@ -1,13 +1,13 @@
 package com.clean.keystrokes.display.hud;
 
-import net.minecraft.util.Identifier;
+import net.minecraft.resources.Identifier;
 
 public final class HudTextures {
 
     private HudTextures() {}
 
     private static Identifier id(String path) {
-        return Identifier.of("clean-keystrokes", "textures/" + path);
+        return Identifier.fromNamespaceAndPath("clean-keystrokes", "textures/" + path);
     }
 
     public static final Identifier KEY_W            = id("key_w.png");
