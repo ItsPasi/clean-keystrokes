@@ -11,8 +11,6 @@ public class MouseTracker {
 
     private static double renderPxX = -1;
     private static double renderPxY = -1;
-    private static double prevRenderPxX = -1;
-    private static double prevRenderPxY = -1;
 
     private static double centerPxX = 0;
     private static double centerPxY = 0;
@@ -42,8 +40,8 @@ public class MouseTracker {
         smoothX = smoothX * adjDecay + pendingDx * SENSITIVITY;
         smoothY = smoothY * adjDecay + pendingDy * SENSITIVITY * aspectRatio;
 
-        smoothX = Math.max(-1.0, Math.min(1.0, smoothX));
-        smoothY = Math.max(-1.0, Math.min(1.0, smoothY));
+        smoothX = Math.clamp(smoothX, -1.0, 1.0);
+        smoothY = Math.clamp(smoothY, -1.0, 1.0);
 
         if (Math.abs(smoothX) < 0.001) smoothX = 0;
         if (Math.abs(smoothY) < 0.001) smoothY = 0;
@@ -65,11 +63,11 @@ public class MouseTracker {
         double targetPxX = Math.floor(centerPxX + smoothX * radiusX + 0.5);
         double targetPxY = Math.floor(centerPxY + smoothY * radiusY + 0.5);
 
+        double prevRenderPxX;
+        double prevRenderPxY;
         if (!initialized) {
             renderPxX     = targetPxX;
             renderPxY     = targetPxY;
-            prevRenderPxX = targetPxX;
-            prevRenderPxY = targetPxY;
             long now = System.currentTimeMillis();
             for (int i = 0; i < TRAIL_LENGTH; i++) {
                 trailPxX[i]    = targetPxX;

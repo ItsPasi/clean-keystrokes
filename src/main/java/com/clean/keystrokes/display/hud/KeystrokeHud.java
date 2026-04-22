@@ -1,15 +1,16 @@
 package com.clean.keystrokes.display.hud;
 
+import com.clean.keystrokes.CleanKeyStrokes;
 import com.clean.keystrokes.display.config.KeystrokeConfig;
 import com.clean.keystrokes.display.util.CpsCounter;
 import com.clean.keystrokes.display.util.KeyPressAnimator;
 import com.clean.keystrokes.display.util.MouseTracker;
 import com.clean.keystrokes.display.util.RainbowColor;
+import com.mojang.blaze3d.platform.InputConstants;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
-import net.minecraft.client.KeyMapping;
-import net.minecraft.client.DeltaTracker;
-import com.mojang.blaze3d.platform.InputConstants;
 import org.lwjgl.glfw.GLFW;
 
 public class KeystrokeHud {
@@ -17,9 +18,20 @@ public class KeystrokeHud {
     public static final CpsCounter lmbCps = new CpsCounter();
     public static final CpsCounter rmbCps = new CpsCounter();
 
+    private static boolean loggedHudHiddenSkip;
+    private static boolean loggedFirstRender;
+
     public void onHudRender(GuiGraphicsExtractor ctx, DeltaTracker tickCounter) {
         Minecraft client = Minecraft.getInstance();
-        if (client.player == null || client.getDebugOverlay().showDebugScreen()) return;
+        if (client.player == null) return;
+
+        if (client.options.hideGui) {
+            if (!loggedHudHiddenSkip) {
+                CleanKeyStrokes.LOGGER.info("Skipping Clean Keystrokes HUD render because hideGui=true.");
+                loggedHudHiddenSkip = true;
+            }
+            return;
+        }
 
         KeystrokeConfig cfg  = KeystrokeConfig.get();
         HudLayout lay        = new HudLayout(cfg);
@@ -31,6 +43,8 @@ public class KeystrokeHud {
         boolean showInputs   = client.screen == null || client.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
         boolean showClicks   = client.screen == null;
         int rainbowColor     = cfg.rainbowText ? RainbowColor.get((cfg.keyColor >> 24) & 0xFF) : 0;
+
+        logFirstRender(client, cfg, lay, showInputs, showClicks);
 
         MouseTracker.tick(delta);
         MouseTracker.updateRenderPos(lay.stripCenterX, lay.rowMouse,
@@ -53,13 +67,14 @@ public class KeystrokeHud {
                 "—", HudTextures.KEY_SPACE, "SPACE", client.options.keyJump,
                 anim, delta, shadow, cfg.rainbowText, rainbowColor, showInputs);
 
-        // SNK / SPR
-        drawKey(ctx, cfg, lay.sneakX, lay.rowSneakSprint, lay.sneakW, hH,
-                "SNK", HudTextures.KEY_SNK, "SNK", client.options.keyShift,
-                anim, delta, shadow, cfg.rainbowText, rainbowColor, showInputs);
-        drawKey(ctx, cfg, lay.sprintX, lay.rowSneakSprint, lay.sprintW, hH,
-                "SPR", HudTextures.KEY_SPR, "SPR", client.options.keySprint,
-                anim, delta, shadow, cfg.rainbowText, rainbowColor, showInputs);
+        if (cfg.showSneakSprintRow) {
+            drawKey(ctx, cfg, lay.sneakX, lay.rowSneakSprint, lay.sneakW, hH,
+                    "SNK", HudTextures.KEY_SNK, "SNK", client.options.keyShift,
+                    anim, delta, shadow, cfg.rainbowText, rainbowColor, showInputs);
+            drawKey(ctx, cfg, lay.sprintX, lay.rowSneakSprint, lay.sprintW, hH,
+                    "SPR", HudTextures.KEY_SPR, "SPR", client.options.keySprint,
+                    anim, delta, shadow, cfg.rainbowText, rainbowColor, showInputs);
+        }
 
         // Mouse row
         boolean lmbDown = showClicks && GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT)  == GLFW.GLFW_PRESS;
@@ -86,6 +101,39 @@ public class KeystrokeHud {
         HudRenderer.drawCenteredNumber(ctx, showClicks ? rmbCps.getCps() : 0,
                 lay.stripRmbX, lay.rowMouse, lay.stripRmbW, hH,
                 resolveFg(cfg, rmbT, cfg.rainbowText, rainbowColor), shadow);
+    }
+
+    private void logFirstRender(Minecraft client, KeystrokeConfig cfg, HudLayout lay,
+                                boolean showInputs, boolean showClicks) {
+        if (loggedFirstRender) {
+            return;
+        }
+        loggedFirstRender = true;
+
+        String screenName = client.screen == null ? "null" : client.screen.getClass().getName();
+        CleanKeyStrokes.LOGGER.info(
+                "First Clean Keystrokes HUD render reached. scaled={}x{}, position={}, origin=({}, {}), showInputs={}, showClicks={}, hideGui={}, debugHud={}, screen={}, configPath='{}', showSneakSprintRow={}, colors={key={}, bg={}, pressedKey={}, pressedBg={}}",
+                client.getWindow().getGuiScaledWidth(),
+                client.getWindow().getGuiScaledHeight(),
+                cfg.position,
+                lay.originX,
+                lay.originY,
+                showInputs,
+                showClicks,
+                client.options.hideGui,
+                client.getDebugOverlay().showDebugScreen(),
+                screenName,
+                KeystrokeConfig.getPath(),
+                cfg.showSneakSprintRow,
+                toArgbHex(cfg.keyColor),
+                toArgbHex(cfg.keyBackgroundColor),
+                toArgbHex(cfg.keyPressedColor),
+                toArgbHex(cfg.keyPressedBackgroundColor)
+        );
+    }
+
+    private String toArgbHex(int color) {
+        return String.format("0x%08X", color);
     }
 
     private void drawKey(GuiGraphicsExtractor ctx, KeystrokeConfig cfg,
