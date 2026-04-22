@@ -47,14 +47,18 @@ public final class HudRenderer {
         int    trailLen = MouseTracker.getTrailLength();
         long   now      = System.currentTimeMillis();
 
+        int sourceAlpha = (fgColor >>> 24) & 0xFF;
+
         for (int i = trailLen - 1; i >= 1; i--) {
             long age   = now - MouseTracker.getTrailTimeMs(i);
             float timeFrac = 1f - Math.min(age / TRAIL_FADE_MS, 1f);
             float posFrac  = 1f - (float) i / trailLen;
             float frac     = timeFrac * posFrac; // both time AND position affect fade
-            if (frac <= 0) continue;
+            if (frac <= 0 || sourceAlpha == 0) continue;
+
+            int trailAlpha = Math.clamp(Math.round(sourceAlpha * 0.1f * frac), 0, 255);
             drawDotAt(ctx, MouseTracker.getTrailPxX(i), MouseTracker.getTrailPxY(i),
-                    scale, dotSize, (((int)(frac * 0.1f * 255)) << 24) | (fgColor & 0x00FFFFFF));
+                    scale, dotSize, (trailAlpha << 24) | (fgColor & 0x00FFFFFF));
         }
 
         // Static center dot at half opacity

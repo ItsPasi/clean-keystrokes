@@ -44,8 +44,8 @@ public final class HudLayout {
 
         gridW = kS * 3 + g * 2;
         gridH = kS * 2              // W + ASD
-                + HALF_HEIGHT * 3   // space + sneakSprint + mouse rows
-                + g * 4;            // gaps between each row
+                + HALF_HEIGHT * (cfg.showSneakSprintRow ? 3 : 2)
+                + g * (cfg.showSneakSprintRow ? 4 : 3);
 
         int ox, oy;
         switch (cfg.position) {
@@ -64,8 +64,10 @@ public final class HudLayout {
         rowW           = originY;
         rowASD         = originY + kS + g;
         rowSpace       = rowASD + kS + g;
-        rowSneakSprint = rowSpace + HALF_HEIGHT + g;
-        rowMouse       = rowSneakSprint + HALF_HEIGHT + g;
+        rowSneakSprint = cfg.showSneakSprintRow ? rowSpace + HALF_HEIGHT + g : -1;
+        rowMouse       = cfg.showSneakSprintRow
+                ? rowSneakSprint + HALF_HEIGHT + g
+                : rowSpace + HALF_HEIGHT + g;
 
         // Space: full grid width
         spaceX = originX;
