@@ -11,7 +11,7 @@ public final class HudRenderer {
 
     private HudRenderer() {}
 
-    // Fade duration in ms — tune here
+    // Fade duration in ms
     private static final float TRAIL_FADE_MS = 300f;
 
     public static void drawTexture(GuiGraphicsExtractor ctx, Identifier tex,
