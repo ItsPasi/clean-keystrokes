@@ -33,6 +33,24 @@ public class ModMenuIntegration implements ModMenuApi {
         KeystrokeConfig cfg = KeystrokeConfig.get();
         final KeystrokeConfig.ColorPreset[] selectedPreset = {cfg.colorPreset};
 
+        class PresetSelectionState {
+            boolean applyingPreset;
+            Option<KeystrokeConfig.ColorPreset> presetOption;
+
+            void markCustom() {
+                if (applyingPreset) {
+                    return;
+                }
+                cfg.markCustomPreset();
+                selectedPreset[0] = KeystrokeConfig.ColorPreset.CUSTOM;
+                if (presetOption != null) {
+                    presetOption.requestSet(KeystrokeConfig.ColorPreset.CUSTOM);
+                }
+            }
+        }
+
+        PresetSelectionState presetSelectionState = new PresetSelectionState();
+
         class ShadowOptionAvailability {
             Option<Boolean> customShadowColorsOption;
             Option<java.awt.Color> keyTextShadowColorOption;
@@ -90,7 +108,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .name(Component.literal("Key Text Shadow Color"))
                 .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyTextShadowColor), v -> {
                     cfg.keyTextShadowColor = colorToInt(v);
-                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    presetSelectionState.markCustom();
                 })
                 .available(shadowColorOptionsEnabled)
                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
@@ -101,7 +119,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .name(Component.literal("Pressed Key Text Shadow Color"))
                 .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyPressedTextShadowColor), v -> {
                     cfg.keyPressedTextShadowColor = colorToInt(v);
-                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    presetSelectionState.markCustom();
                 })
                 .available(shadowColorOptionsEnabled)
                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
@@ -112,7 +130,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .name(Component.literal("Custom Shadow Colors"))
                 .binding(false, () -> cfg.useCustomTextShadowColor, v -> {
                     cfg.useCustomTextShadowColor = v;
-                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    presetSelectionState.markCustom();
                     shadowOptionAvailability.update();
                 })
                 .available(anyShadowEnabled)
@@ -124,7 +142,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .name(Component.literal("Key Text Shadow"))
                 .binding(false, () -> cfg.keyTextShadow, v -> {
                     cfg.keyTextShadow = v;
-                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    presetSelectionState.markCustom();
                     shadowOptionAvailability.update();
                 })
                 .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
@@ -134,7 +152,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .name(Component.literal("Pressed Key Text Shadow"))
                 .binding(false, () -> cfg.keyPressedTextShadow, v -> {
                     cfg.keyPressedTextShadow = v;
-                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    presetSelectionState.markCustom();
                     shadowOptionAvailability.update();
                 })
                 .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
@@ -144,7 +162,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .name(Component.literal("Rainbow Key Text Shadow"))
                 .binding(false, () -> cfg.rainbowKeyTextShadow, v -> {
                     cfg.rainbowKeyTextShadow = v;
-                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    presetSelectionState.markCustom();
                 })
                 .available(cfg.keyTextShadow)
                 .controller(TickBoxControllerBuilder::create)
@@ -155,7 +173,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .name(Component.literal("Rainbow Pressed Key Text Shadow"))
                 .binding(false, () -> cfg.rainbowKeyPressedTextShadow, v -> {
                     cfg.rainbowKeyPressedTextShadow = v;
-                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    presetSelectionState.markCustom();
                 })
                 .available(cfg.keyPressedTextShadow)
                 .controller(TickBoxControllerBuilder::create)
@@ -196,7 +214,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .name(Component.literal("Key Text Color"))
                 .binding(intToColor(0xFFFFFFFF), () -> intToColor(cfg.keyColor), v -> {
                     cfg.keyColor = colorToInt(v);
-                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    presetSelectionState.markCustom();
                 })
                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
                 .build();
@@ -205,7 +223,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .name(Component.literal("Pressed Key Text Color"))
                 .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyPressedColor), v -> {
                     cfg.keyPressedColor = colorToInt(v);
-                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    presetSelectionState.markCustom();
                 })
                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
                 .build();
@@ -214,7 +232,7 @@ public class ModMenuIntegration implements ModMenuApi {
                 .name(Component.literal("Key Background Color"))
                 .binding(intToColor(0xAA000000), () -> intToColor(cfg.keyBackgroundColor), v -> {
                     cfg.keyBackgroundColor = colorToInt(v);
-                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    presetSelectionState.markCustom();
                 })
                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
                 .build();
@@ -223,9 +241,45 @@ public class ModMenuIntegration implements ModMenuApi {
                 .name(Component.literal("Pressed Key Background Color"))
                 .binding(intToColor(0xAAFFFFFF), () -> intToColor(cfg.keyPressedBackgroundColor), v -> {
                     cfg.keyPressedBackgroundColor = colorToInt(v);
-                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    presetSelectionState.markCustom();
                 })
                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
+                .build();
+
+        Option<Boolean> rainbowKeyTextOption = Option.<Boolean>createBuilder()
+                .name(Component.literal("Rainbow Key Text"))
+                .binding(false, () -> cfg.rainbowKeyNormal, v -> {
+                    cfg.rainbowKeyNormal = v;
+                    presetSelectionState.markCustom();
+                })
+                .controller(TickBoxControllerBuilder::create)
+                .build();
+
+        Option<Boolean> rainbowPressedKeyTextOption = Option.<Boolean>createBuilder()
+                .name(Component.literal("Rainbow Pressed Key Text"))
+                .binding(false, () -> cfg.rainbowKeyPressed, v -> {
+                    cfg.rainbowKeyPressed = v;
+                    presetSelectionState.markCustom();
+                })
+                .controller(TickBoxControllerBuilder::create)
+                .build();
+
+        Option<Boolean> rainbowBackgroundOption = Option.<Boolean>createBuilder()
+                .name(Component.literal("Rainbow Background"))
+                .binding(false, () -> cfg.rainbowBackgroundNormal, v -> {
+                    cfg.rainbowBackgroundNormal = v;
+                    presetSelectionState.markCustom();
+                })
+                .controller(TickBoxControllerBuilder::create)
+                .build();
+
+        Option<Boolean> rainbowPressedBackgroundOption = Option.<Boolean>createBuilder()
+                .name(Component.literal("Rainbow Pressed Background"))
+                .binding(false, () -> cfg.rainbowBackgroundPressed, v -> {
+                    cfg.rainbowBackgroundPressed = v;
+                    presetSelectionState.markCustom();
+                })
+                .controller(TickBoxControllerBuilder::create)
                 .build();
 
         Option<KeystrokeConfig.ColorPreset> presetOption = Option.<KeystrokeConfig.ColorPreset>createBuilder()
@@ -238,24 +292,34 @@ public class ModMenuIntegration implements ModMenuApi {
                         v -> {
                             selectedPreset[0] = v;
                             if (!v.isCustom()) {
-                                cfg.applyPreset(v);
-                                keyTextColorOption.requestSet(intToColor(cfg.keyColor));
-                                keyPressedTextColorOption.requestSet(intToColor(cfg.keyPressedColor));
-                                keyBackgroundColorOption.requestSet(intToColor(cfg.keyBackgroundColor));
-                                keyPressedBackgroundColorOption.requestSet(intToColor(cfg.keyPressedBackgroundColor));
-                                keyTextShadowOption.requestSet(cfg.keyTextShadow);
-                                keyPressedTextShadowOption.requestSet(cfg.keyPressedTextShadow);
-                                customShadowColorsOption.requestSet(cfg.useCustomTextShadowColor);
-                                rainbowKeyTextShadowOption.requestSet(cfg.rainbowKeyTextShadow);
-                                rainbowKeyPressedTextShadowOption.requestSet(cfg.rainbowKeyPressedTextShadow);
-                                keyTextShadowColorOption.requestSet(intToColor(cfg.keyTextShadowColor));
-                                keyPressedTextShadowColorOption.requestSet(intToColor(cfg.keyPressedTextShadowColor));
-                                shadowOptionAvailability.update();
+                                presetSelectionState.applyingPreset = true;
+                                try {
+                                    cfg.applyPreset(v);
+                                    keyTextColorOption.requestSet(intToColor(cfg.keyColor));
+                                    keyPressedTextColorOption.requestSet(intToColor(cfg.keyPressedColor));
+                                    keyBackgroundColorOption.requestSet(intToColor(cfg.keyBackgroundColor));
+                                    keyPressedBackgroundColorOption.requestSet(intToColor(cfg.keyPressedBackgroundColor));
+                                    keyTextShadowOption.requestSet(cfg.keyTextShadow);
+                                    keyPressedTextShadowOption.requestSet(cfg.keyPressedTextShadow);
+                                    customShadowColorsOption.requestSet(cfg.useCustomTextShadowColor);
+                                    rainbowKeyTextShadowOption.requestSet(cfg.rainbowKeyTextShadow);
+                                    rainbowKeyPressedTextShadowOption.requestSet(cfg.rainbowKeyPressedTextShadow);
+                                    keyTextShadowColorOption.requestSet(intToColor(cfg.keyTextShadowColor));
+                                    keyPressedTextShadowColorOption.requestSet(intToColor(cfg.keyPressedTextShadowColor));
+                                    rainbowKeyTextOption.requestSet(cfg.rainbowKeyNormal);
+                                    rainbowPressedKeyTextOption.requestSet(cfg.rainbowKeyPressed);
+                                    rainbowBackgroundOption.requestSet(cfg.rainbowBackgroundNormal);
+                                    rainbowPressedBackgroundOption.requestSet(cfg.rainbowBackgroundPressed);
+                                    shadowOptionAvailability.update();
+                                } finally {
+                                    presetSelectionState.applyingPreset = false;
+                                }
                             }
                         })
                 .controller(opt -> EnumControllerBuilder.create(opt)
                         .enumClass(KeystrokeConfig.ColorPreset.class))
                 .build();
+        presetSelectionState.presetOption = presetOption;
 
         return YetAnotherConfigLib.createBuilder()
                 .title(Component.literal("Clean Keystroke Settings"))
@@ -294,36 +358,33 @@ public class ModMenuIntegration implements ModMenuApi {
                         .option(keyPressedTextShadowColorOption)
                         .option(rainbowKeyTextShadowOption)
                         .option(rainbowKeyPressedTextShadowOption)
-                        .option(Option.<Boolean>createBuilder()
-                                .name(Component.literal("Rainbow Key Text"))
-                                .binding(false, () -> cfg.rainbowKeyNormal, v -> cfg.rainbowKeyNormal = v)
-                                .controller(TickBoxControllerBuilder::create)
-                                .build())
-                        .option(Option.<Boolean>createBuilder()
-                                .name(Component.literal("Rainbow Pressed Key Text"))
-                                .binding(false, () -> cfg.rainbowKeyPressed, v -> cfg.rainbowKeyPressed = v)
-                                .controller(TickBoxControllerBuilder::create)
-                                .build())
-                        .option(Option.<Boolean>createBuilder()
-                                .name(Component.literal("Rainbow Background"))
-                                .binding(false, () -> cfg.rainbowBackgroundNormal, v -> cfg.rainbowBackgroundNormal = v)
-                                .controller(TickBoxControllerBuilder::create)
-                                .build())
-                        .option(Option.<Boolean>createBuilder()
-                                .name(Component.literal("Rainbow Pressed Background"))
-                                .binding(false, () -> cfg.rainbowBackgroundPressed, v -> cfg.rainbowBackgroundPressed = v)
-                                .controller(TickBoxControllerBuilder::create)
+                        .option(rainbowKeyTextOption)
+                        .option(rainbowPressedKeyTextOption)
+                        .option(rainbowBackgroundOption)
+                        .option(rainbowPressedBackgroundOption)
+                        .option(Option.<Double>createBuilder()
+                                .name(Component.literal("Rainbow Speed"))
+                                .binding(1.0, () -> cfg.rainbowSpeed, v -> {
+                                            cfg.rainbowSpeed = v;
+                                            presetSelectionState.markCustom();
+                                        })
+                                .controller(opt -> DoubleSliderControllerBuilder.create(opt)
+                                        .range(0.1, 20.0)
+                                        .step(0.1)
+                                        .formatValue(v -> Component.literal(String.format("%.1fx", v))))
                                 .build())
                         .build())
                 .save(() -> {
                     if (selectedPreset[0] == null) {
-                        selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                        selectedPreset[0] = cfg.colorPreset == null
+                                ? KeystrokeConfig.ColorPreset.CUSTOM
+                                : cfg.colorPreset;
                     }
 
                     if (!selectedPreset[0].isCustom()) {
                         cfg.applyPreset(selectedPreset[0]);
                     } else {
-                        cfg.refreshPresetFromCurrentColors();
+                        cfg.markCustomPreset();
                     }
 
                     cfg.save();

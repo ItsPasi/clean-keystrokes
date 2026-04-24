@@ -46,22 +46,22 @@ public class KeystrokeHud {
         boolean showClicks   = client.screen == null;
 
         int rainbowFgIdle = cfg.rainbowKeyNormal
-                ? RainbowColor.get((cfg.keyColor >>> 24) & 0xFF)
+                ? RainbowColor.get((cfg.keyColor >>> 24) & 0xFF, cfg.rainbowSpeed)
                 : 0;
         int rainbowFgPressed = cfg.rainbowKeyPressed
-                ? RainbowColor.getOpposite((cfg.keyPressedColor >>> 24) & 0xFF)
+                ? RainbowColor.getOpposite((cfg.keyPressedColor >>> 24) & 0xFF, cfg.rainbowSpeed)
                 : 0;
         int rainbowBgIdle = cfg.rainbowBackgroundNormal
-                ? RainbowColor.getOpposite((cfg.keyBackgroundColor >>> 24) & 0xFF)
+                ? RainbowColor.getOpposite((cfg.keyBackgroundColor >>> 24) & 0xFF, cfg.rainbowSpeed)
                 : 0;
         int rainbowBgPressed = cfg.rainbowBackgroundPressed
-                ? RainbowColor.get((cfg.keyPressedBackgroundColor >>> 24) & 0xFF)
+                ? RainbowColor.get((cfg.keyPressedBackgroundColor >>> 24) & 0xFF, cfg.rainbowSpeed)
                 : 0;
         int rainbowShadowIdle = cfg.rainbowKeyTextShadow
-                ? RainbowColor.getShifted((cfg.keyTextShadowColor >>> 24) & 0xFF, 0.25f)
+                ? RainbowColor.getShifted((cfg.keyTextShadowColor >>> 24) & 0xFF, 0.25f, cfg.rainbowSpeed)
                 : 0;
         int rainbowShadowPressed = cfg.rainbowKeyPressedTextShadow
-                ? RainbowColor.getShifted((cfg.keyPressedTextShadowColor >>> 24) & 0xFF, 0.75f)
+                ? RainbowColor.getShifted((cfg.keyPressedTextShadowColor >>> 24) & 0xFF, 0.75f, cfg.rainbowSpeed)
                 : 0;
 
         if (cfg.tickSyncedKeyPresses) {

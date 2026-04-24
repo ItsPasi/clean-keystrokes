@@ -99,6 +99,7 @@ public class KeystrokeConfig {
     public boolean rainbowBackgroundPressed    = false;
     public boolean rainbowKeyTextShadow        = false;
     public boolean rainbowKeyPressedTextShadow = false;
+    public double  rainbowSpeed                = 1.0;
     public boolean keyTextShadow               = false;
     public boolean keyPressedTextShadow        = false;
     public boolean useCustomTextShadowColor    = false;
@@ -174,14 +175,14 @@ public class KeystrokeConfig {
         this.rainbowKeyPressedTextShadow = preset.rainbowKeyPressedTextShadow;
         this.keyTextShadowColor = preset.keyTextShadowColor;
         this.keyPressedTextShadowColor = preset.keyPressedTextShadowColor;
+        this.rainbowKeyNormal = false;
+        this.rainbowKeyPressed = false;
+        this.rainbowBackgroundNormal = false;
+        this.rainbowBackgroundPressed = false;
     }
 
-    public ColorPreset refreshPresetFromCurrentColors() {
-        this.colorPreset = matchesKnownPreset();
-        if (this.colorPreset.isCustom()) {
-            this.colorPreset = ColorPreset.CUSTOM;
-        }
-        return this.colorPreset;
+    public void markCustomPreset() {
+        this.colorPreset = ColorPreset.CUSTOM;
     }
 
     private ColorPreset matchesKnownPreset() {
