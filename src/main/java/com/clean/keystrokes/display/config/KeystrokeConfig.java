@@ -11,7 +11,7 @@ import java.nio.file.Path;
 
 public class KeystrokeConfig {
 
-    public enum CornerPosition { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT }
+    public enum CornerPosition { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, CUSTOM }
 
     public enum ColorPreset {
         CLASSIC("Classic", 0xFFFFFFFF, 0xAA000000, 0xFF000000, 0xAAFFFFFF),
@@ -57,7 +57,6 @@ public class KeystrokeConfig {
     private static final int DEFAULT_KEY_PRESSED_TEXT_SHADOW_COLOR = 0xFF000000;
 
     public CornerPosition position             = CornerPosition.TOP_RIGHT;
-    public boolean useCustomPosition           = false;
     public double  customPositionXPercent      = 50.0;
     public double  customPositionYPercent      = 50.0;
     public int  keyColor                       = DEFAULT_KEY_COLOR;

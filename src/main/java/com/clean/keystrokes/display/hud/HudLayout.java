@@ -48,7 +48,7 @@ public final class HudLayout {
                 + g * (cfg.showSneakSprintRow ? 4 : 3);
 
         int ox, oy;
-        if (cfg.useCustomPosition) {
+        if (cfg.position == KeystrokeConfig.CornerPosition.CUSTOM) {
             int maxX = Math.max(0, screenW - gridW - MARGIN);
             int maxY = Math.max(0, screenH - gridH - MARGIN);
             ox = (int) Math.round(maxX * (clampPercent(cfg.customPositionXPercent) / 100.0));

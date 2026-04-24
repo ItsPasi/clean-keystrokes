@@ -33,67 +33,155 @@ public class ModMenuIntegration implements ModMenuApi {
         KeystrokeConfig cfg = KeystrokeConfig.get();
         final KeystrokeConfig.ColorPreset[] selectedPreset = {cfg.colorPreset};
 
+        class ShadowOptionAvailability {
+            Option<Boolean> customShadowColorsOption;
+            Option<java.awt.Color> keyTextShadowColorOption;
+            Option<java.awt.Color> keyPressedTextShadowColorOption;
+
+            void update() {
+                boolean anyShadowEnabled = cfg.keyTextShadow || cfg.keyPressedTextShadow;
+
+                if (!anyShadowEnabled) {
+                    cfg.useCustomTextShadowColor = false;
+                }
+
+                if (customShadowColorsOption != null) {
+                    customShadowColorsOption.setAvailable(anyShadowEnabled);
+                }
+
+                boolean shadowColorOptionsEnabled = anyShadowEnabled && cfg.useCustomTextShadowColor;
+                if (keyTextShadowColorOption != null) {
+                    keyTextShadowColorOption.setAvailable(shadowColorOptionsEnabled);
+                }
+                if (keyPressedTextShadowColorOption != null) {
+                    keyPressedTextShadowColorOption.setAvailable(shadowColorOptionsEnabled);
+                }
+            }
+        }
+
+        ShadowOptionAvailability shadowOptionAvailability = new ShadowOptionAvailability();
+        boolean anyShadowEnabled = cfg.keyTextShadow || cfg.keyPressedTextShadow;
+        boolean shadowColorOptionsEnabled = anyShadowEnabled && cfg.useCustomTextShadowColor;
+
         Option<java.awt.Color> keyTextShadowColorOption = Option.<java.awt.Color>createBuilder()
                 .name(Component.literal("Key Text Shadow Color"))
                 .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyTextShadowColor), v -> cfg.keyTextShadowColor = colorToInt(v))
-                .available(cfg.useCustomTextShadowColor)
+                .available(shadowColorOptionsEnabled)
                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
                 .build();
+        shadowOptionAvailability.keyTextShadowColorOption = keyTextShadowColorOption;
 
         Option<java.awt.Color> keyPressedTextShadowColorOption = Option.<java.awt.Color>createBuilder()
                 .name(Component.literal("Pressed Key Text Shadow Color"))
                 .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyPressedTextShadowColor), v -> cfg.keyPressedTextShadowColor = colorToInt(v))
-                .available(cfg.useCustomTextShadowColor)
+                .available(shadowColorOptionsEnabled)
                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
                 .build();
+        shadowOptionAvailability.keyPressedTextShadowColorOption = keyPressedTextShadowColorOption;
 
         Option<Boolean> customShadowColorsOption = Option.<Boolean>createBuilder()
                 .name(Component.literal("Custom Shadow Colors"))
-                .binding(false, () -> cfg.useCustomTextShadowColor, v -> cfg.useCustomTextShadowColor = v)
-                .listener((opt, value) -> {
-                    keyTextShadowColorOption.setAvailable(value);
-                    keyPressedTextShadowColorOption.setAvailable(value);
+                .binding(false, () -> cfg.useCustomTextShadowColor, v -> {
+                    cfg.useCustomTextShadowColor = v;
+                    shadowOptionAvailability.update();
                 })
+                .available(anyShadowEnabled)
                 .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
                 .build();
+        shadowOptionAvailability.customShadowColorsOption = customShadowColorsOption;
+
+        boolean customPositionSelected = cfg.position == KeystrokeConfig.CornerPosition.CUSTOM;
 
         Option<Double> customPositionXOption = Option.<Double>createBuilder()
                 .name(Component.literal("Horizontal Position (%)"))
                 .binding(50.0, () -> cfg.customPositionXPercent, v -> cfg.customPositionXPercent = v)
-                .available(cfg.useCustomPosition)
+                .available(customPositionSelected)
                 .controller(opt -> DoubleSliderControllerBuilder.create(opt).range(0.0, 100.0).step(0.5).formatValue(v -> Component.literal(String.format("%.1f%%", v))))
                 .build();
 
         Option<Double> customPositionYOption = Option.<Double>createBuilder()
                 .name(Component.literal("Vertical Position (%)"))
                 .binding(50.0, () -> cfg.customPositionYPercent, v -> cfg.customPositionYPercent = v)
-                .available(cfg.useCustomPosition)
+                .available(customPositionSelected)
                 .controller(opt -> DoubleSliderControllerBuilder.create(opt).range(0.0, 100.0).step(0.5).formatValue(v -> Component.literal(String.format("%.1f%%", v))))
                 .build();
 
-        Option<Boolean> customPositionOption = Option.<Boolean>createBuilder()
-                .name(Component.literal("Custom Position"))
-                .binding(false, () -> cfg.useCustomPosition, v -> cfg.useCustomPosition = v)
-                .listener((opt, value) -> {
-                    customPositionXOption.setAvailable(value);
-                    customPositionYOption.setAvailable(value);
+        Option<KeystrokeConfig.CornerPosition> positionOption = Option.<KeystrokeConfig.CornerPosition>createBuilder()
+                .name(Component.literal("Position"))
+                .binding(KeystrokeConfig.CornerPosition.TOP_RIGHT,
+                        () -> cfg.position,
+                        v -> {
+                            cfg.position = v;
+                            boolean custom = v == KeystrokeConfig.CornerPosition.CUSTOM;
+                            customPositionXOption.setAvailable(custom);
+                            customPositionYOption.setAvailable(custom);
+                        })
+                .controller(opt -> EnumControllerBuilder.create(opt)
+                        .enumClass(KeystrokeConfig.CornerPosition.class))
+                .build();
+
+        Option<java.awt.Color> keyTextColorOption = Option.<java.awt.Color>createBuilder()
+                .name(Component.literal("Key Text Color"))
+                .binding(intToColor(0xFFFFFFFF), () -> intToColor(cfg.keyColor), v -> {
+                    cfg.keyColor = colorToInt(v);
+                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
                 })
-                .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
+                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
+                .build();
+
+        Option<java.awt.Color> keyPressedTextColorOption = Option.<java.awt.Color>createBuilder()
+                .name(Component.literal("Pressed Key Text Color"))
+                .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyPressedColor), v -> {
+                    cfg.keyPressedColor = colorToInt(v);
+                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                })
+                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
+                .build();
+
+        Option<java.awt.Color> keyBackgroundColorOption = Option.<java.awt.Color>createBuilder()
+                .name(Component.literal("Key Background Color"))
+                .binding(intToColor(0xAA000000), () -> intToColor(cfg.keyBackgroundColor), v -> {
+                    cfg.keyBackgroundColor = colorToInt(v);
+                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                })
+                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
+                .build();
+
+        Option<java.awt.Color> keyPressedBackgroundColorOption = Option.<java.awt.Color>createBuilder()
+                .name(Component.literal("Pressed Key Background Color"))
+                .binding(intToColor(0xAAFFFFFF), () -> intToColor(cfg.keyPressedBackgroundColor), v -> {
+                    cfg.keyPressedBackgroundColor = colorToInt(v);
+                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                })
+                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
+                .build();
+
+        Option<KeystrokeConfig.ColorPreset> presetOption = Option.<KeystrokeConfig.ColorPreset>createBuilder()
+                .name(Component.literal("Presets"))
+                .description(OptionDescription.createBuilder()
+                        .image(PRESET_PREVIEW, 1422, 2142)
+                        .build())
+                .binding(KeystrokeConfig.ColorPreset.CLASSIC,
+                        () -> selectedPreset[0],
+                        v -> {
+                            selectedPreset[0] = v;
+                            if (!v.isCustom()) {
+                                cfg.applyPreset(v);
+                                keyTextColorOption.requestSet(intToColor(cfg.keyColor));
+                                keyPressedTextColorOption.requestSet(intToColor(cfg.keyPressedColor));
+                                keyBackgroundColorOption.requestSet(intToColor(cfg.keyBackgroundColor));
+                                keyPressedBackgroundColorOption.requestSet(intToColor(cfg.keyPressedBackgroundColor));
+                            }
+                        })
+                .controller(opt -> EnumControllerBuilder.create(opt)
+                        .enumClass(KeystrokeConfig.ColorPreset.class))
                 .build();
 
         return YetAnotherConfigLib.createBuilder()
                 .title(Component.literal("Clean Keystroke Settings"))
                 .category(ConfigCategory.createBuilder()
                         .name(Component.literal("General"))
-                        .option(Option.<KeystrokeConfig.CornerPosition>createBuilder()
-                                .name(Component.literal("Position"))
-                                .binding(KeystrokeConfig.CornerPosition.TOP_RIGHT,
-                                        () -> cfg.position,
-                                        v -> cfg.position = v)
-                                .controller(opt -> EnumControllerBuilder.create(opt)
-                                        .enumClass(KeystrokeConfig.CornerPosition.class))
-                                .build())
-                        .option(customPositionOption)
+                        .option(positionOption)
                         .option(customPositionXOption)
                         .option(customPositionYOption)
                         .option(Option.<Boolean>createBuilder()
@@ -114,49 +202,11 @@ public class ModMenuIntegration implements ModMenuApi {
                         .build())
                 .category(ConfigCategory.createBuilder()
                         .name(Component.literal("Appearance"))
-                        .option(Option.<KeystrokeConfig.ColorPreset>createBuilder()
-                                .name(Component.literal("Presets"))
-                                .description(OptionDescription.createBuilder()
-                                        .image(PRESET_PREVIEW, 1422, 2142)
-                                        .build())
-                                .binding(KeystrokeConfig.ColorPreset.CLASSIC,
-                                        () -> selectedPreset[0],
-                                        v -> selectedPreset[0] = v)
-                                .controller(opt -> EnumControllerBuilder.create(opt)
-                                        .enumClass(KeystrokeConfig.ColorPreset.class))
-                                .build())
-                        .option(Option.<java.awt.Color>createBuilder()
-                                .name(Component.literal("Key Text Color"))
-                                .binding(intToColor(0xFFFFFFFF), () -> intToColor(cfg.keyColor), v -> {
-                                    cfg.keyColor = colorToInt(v);
-                                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
-                                })
-                                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
-                                .build())
-                        .option(Option.<java.awt.Color>createBuilder()
-                                .name(Component.literal("Pressed Key Text Color"))
-                                .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyPressedColor), v -> {
-                                    cfg.keyPressedColor = colorToInt(v);
-                                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
-                                })
-                                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
-                                .build())
-                        .option(Option.<java.awt.Color>createBuilder()
-                                .name(Component.literal("Key Background Color"))
-                                .binding(intToColor(0xAA000000), () -> intToColor(cfg.keyBackgroundColor), v -> {
-                                    cfg.keyBackgroundColor = colorToInt(v);
-                                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
-                                })
-                                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
-                                .build())
-                        .option(Option.<java.awt.Color>createBuilder()
-                                .name(Component.literal("Pressed Key Background Color"))
-                                .binding(intToColor(0xAAFFFFFF), () -> intToColor(cfg.keyPressedBackgroundColor), v -> {
-                                    cfg.keyPressedBackgroundColor = colorToInt(v);
-                                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
-                                })
-                                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
-                                .build())
+                        .option(presetOption)
+                        .option(keyTextColorOption)
+                        .option(keyPressedTextColorOption)
+                        .option(keyBackgroundColorOption)
+                        .option(keyPressedBackgroundColorOption)
                         .option(Option.<Boolean>createBuilder()
                                 .name(Component.literal("Rainbow Key Text"))
                                 .binding(false, () -> cfg.rainbowKeyNormal, v -> cfg.rainbowKeyNormal = v)
@@ -179,12 +229,18 @@ public class ModMenuIntegration implements ModMenuApi {
                                 .build())
                         .option(Option.<Boolean>createBuilder()
                                 .name(Component.literal("Key Text Shadow"))
-                                .binding(false, () -> cfg.keyTextShadow, v -> cfg.keyTextShadow = v)
+                                .binding(false, () -> cfg.keyTextShadow, v -> {
+                                    cfg.keyTextShadow = v;
+                                    shadowOptionAvailability.update();
+                                })
                                 .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
                                 .build())
                         .option(Option.<Boolean>createBuilder()
                                 .name(Component.literal("Pressed Key Text Shadow"))
-                                .binding(false, () -> cfg.keyPressedTextShadow, v -> cfg.keyPressedTextShadow = v)
+                                .binding(false, () -> cfg.keyPressedTextShadow, v -> {
+                                    cfg.keyPressedTextShadow = v;
+                                    shadowOptionAvailability.update();
+                                })
                                 .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
                                 .build())
                         .option(customShadowColorsOption)
