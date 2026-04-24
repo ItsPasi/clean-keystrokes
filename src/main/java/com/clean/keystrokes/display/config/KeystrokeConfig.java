@@ -16,7 +16,8 @@ public class KeystrokeConfig {
     public enum ColorPreset {
         CLASSIC("Classic", 0xFFFFFFFF, 0xAA000000, 0xFF000000, 0xAAFFFFFF),
         INVERTED("Inverted", 0xFF000000, 0xAAFFFFFF, 0xFFFFFFFF, 0xAA000000),
-        CLEAN("Clean", 0xFFFFFFFF, 0x00FFFFFF, 0xFF000000, 0x00FFFFFF),
+        CLEAN("Clean", 0xFFFFFFFF, 0x00FFFFFF, 0xFF000000, 0x00FFFFFF,
+                  true, true, true, 0xFF000000, 0xFFFFFFFF),
         BEEHIVE("Beehive", 0xFFFFD000, 0xFF000000, 0xFF000000, 0xFFFFD000),
         MINT_CREAM("Mint & Cream", 0xFF00A896, 0xFFF0F3BD, 0xFF05668D, 0xFF02C39A),
         CYBER_GRAPE("Cyber Grape", 0xFFC7EDE4, 0xFF820B8A, 0xFF672A4E, 0xFFAF9AB2),
@@ -30,13 +31,29 @@ public class KeystrokeConfig {
         private final int keyBackgroundColor;
         private final int keyPressedColor;
         private final int keyPressedBackgroundColor;
+        private final boolean keyTextShadow;
+        private final boolean keyPressedTextShadow;
+        private final boolean useCustomTextShadowColor;
+        private final int keyTextShadowColor;
+        private final int keyPressedTextShadowColor;
 
         ColorPreset(String displayName, int keyColor, int keyBackgroundColor, int keyPressedColor, int keyPressedBackgroundColor) {
+            this(displayName, keyColor, keyBackgroundColor, keyPressedColor, keyPressedBackgroundColor, false, false, false, 0xFF000000, 0xFF000000);
+        }
+
+        ColorPreset(String displayName, int keyColor, int keyBackgroundColor, int keyPressedColor, int keyPressedBackgroundColor,
+                    boolean keyTextShadow, boolean keyPressedTextShadow, boolean useCustomTextShadowColor,
+                    int keyTextShadowColor, int keyPressedTextShadowColor) {
             this.displayName = displayName;
             this.keyColor = keyColor;
             this.keyBackgroundColor = keyBackgroundColor;
             this.keyPressedColor = keyPressedColor;
             this.keyPressedBackgroundColor = keyPressedBackgroundColor;
+            this.keyTextShadow = keyTextShadow;
+            this.keyPressedTextShadow = keyPressedTextShadow;
+            this.useCustomTextShadowColor = useCustomTextShadowColor;
+            this.keyTextShadowColor = keyTextShadowColor;
+            this.keyPressedTextShadowColor = keyPressedTextShadowColor;
         }
 
         public boolean isCustom() {
@@ -137,6 +154,11 @@ public class KeystrokeConfig {
         this.keyBackgroundColor = preset.keyBackgroundColor;
         this.keyPressedColor = preset.keyPressedColor;
         this.keyPressedBackgroundColor = preset.keyPressedBackgroundColor;
+        this.keyTextShadow = preset.keyTextShadow;
+        this.keyPressedTextShadow = preset.keyPressedTextShadow;
+        this.useCustomTextShadowColor = preset.useCustomTextShadowColor;
+        this.keyTextShadowColor = preset.keyTextShadowColor;
+        this.keyPressedTextShadowColor = preset.keyPressedTextShadowColor;
     }
 
     public ColorPreset refreshPresetFromCurrentColors() {
@@ -155,7 +177,12 @@ public class KeystrokeConfig {
             if (preset.keyColor == keyColor
                     && preset.keyBackgroundColor == keyBackgroundColor
                     && preset.keyPressedColor == keyPressedColor
-                    && preset.keyPressedBackgroundColor == keyPressedBackgroundColor) {
+                    && preset.keyPressedBackgroundColor == keyPressedBackgroundColor
+                    && preset.keyTextShadow == keyTextShadow
+                    && preset.keyPressedTextShadow == keyPressedTextShadow
+                    && preset.useCustomTextShadowColor == useCustomTextShadowColor
+                    && preset.keyTextShadowColor == keyTextShadowColor
+                    && preset.keyPressedTextShadowColor == keyPressedTextShadowColor) {
                 return preset;
             }
         }

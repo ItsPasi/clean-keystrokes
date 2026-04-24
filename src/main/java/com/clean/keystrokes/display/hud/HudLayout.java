@@ -52,7 +52,7 @@ public final class HudLayout {
             int maxX = Math.max(0, screenW - gridW - MARGIN);
             int maxY = Math.max(0, screenH - gridH - MARGIN);
             ox = (int) Math.round(maxX * (clampPercent(cfg.customPositionXPercent) / 100.0));
-            oy = (int) Math.round(maxY * (clampPercent(cfg.customPositionYPercent) / 100.0));
+            oy = (int) Math.round(maxY * (1.0 - (clampPercent(cfg.customPositionYPercent) / 100.0)));
         } else {
             switch (cfg.position) {
                 case TOP_RIGHT    -> { ox = screenW - gridW - MARGIN; oy = MARGIN; }

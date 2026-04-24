@@ -65,7 +65,10 @@ public class ModMenuIntegration implements ModMenuApi {
 
         Option<java.awt.Color> keyTextShadowColorOption = Option.<java.awt.Color>createBuilder()
                 .name(Component.literal("Key Text Shadow Color"))
-                .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyTextShadowColor), v -> cfg.keyTextShadowColor = colorToInt(v))
+                .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyTextShadowColor), v -> {
+                    cfg.keyTextShadowColor = colorToInt(v);
+                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                })
                 .available(shadowColorOptionsEnabled)
                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
                 .build();
@@ -73,7 +76,10 @@ public class ModMenuIntegration implements ModMenuApi {
 
         Option<java.awt.Color> keyPressedTextShadowColorOption = Option.<java.awt.Color>createBuilder()
                 .name(Component.literal("Pressed Key Text Shadow Color"))
-                .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyPressedTextShadowColor), v -> cfg.keyPressedTextShadowColor = colorToInt(v))
+                .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyPressedTextShadowColor), v -> {
+                    cfg.keyPressedTextShadowColor = colorToInt(v);
+                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                })
                 .available(shadowColorOptionsEnabled)
                 .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
                 .build();
@@ -83,12 +89,33 @@ public class ModMenuIntegration implements ModMenuApi {
                 .name(Component.literal("Custom Shadow Colors"))
                 .binding(false, () -> cfg.useCustomTextShadowColor, v -> {
                     cfg.useCustomTextShadowColor = v;
+                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
                     shadowOptionAvailability.update();
                 })
                 .available(anyShadowEnabled)
                 .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
                 .build();
         shadowOptionAvailability.customShadowColorsOption = customShadowColorsOption;
+
+        Option<Boolean> keyTextShadowOption = Option.<Boolean>createBuilder()
+                .name(Component.literal("Key Text Shadow"))
+                .binding(false, () -> cfg.keyTextShadow, v -> {
+                    cfg.keyTextShadow = v;
+                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    shadowOptionAvailability.update();
+                })
+                .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
+                .build();
+
+        Option<Boolean> keyPressedTextShadowOption = Option.<Boolean>createBuilder()
+                .name(Component.literal("Pressed Key Text Shadow"))
+                .binding(false, () -> cfg.keyPressedTextShadow, v -> {
+                    cfg.keyPressedTextShadow = v;
+                    selectedPreset[0] = cfg.refreshPresetFromCurrentColors();
+                    shadowOptionAvailability.update();
+                })
+                .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
+                .build();
 
         boolean customPositionSelected = cfg.position == KeystrokeConfig.CornerPosition.CUSTOM;
 
@@ -171,6 +198,12 @@ public class ModMenuIntegration implements ModMenuApi {
                                 keyPressedTextColorOption.requestSet(intToColor(cfg.keyPressedColor));
                                 keyBackgroundColorOption.requestSet(intToColor(cfg.keyBackgroundColor));
                                 keyPressedBackgroundColorOption.requestSet(intToColor(cfg.keyPressedBackgroundColor));
+                                keyTextShadowOption.requestSet(cfg.keyTextShadow);
+                                keyPressedTextShadowOption.requestSet(cfg.keyPressedTextShadow);
+                                customShadowColorsOption.requestSet(cfg.useCustomTextShadowColor);
+                                keyTextShadowColorOption.requestSet(intToColor(cfg.keyTextShadowColor));
+                                keyPressedTextShadowColorOption.requestSet(intToColor(cfg.keyPressedTextShadowColor));
+                                shadowOptionAvailability.update();
                             }
                         })
                 .controller(opt -> EnumControllerBuilder.create(opt)
@@ -185,6 +218,11 @@ public class ModMenuIntegration implements ModMenuApi {
                         .option(customPositionXOption)
                         .option(customPositionYOption)
                         .option(Option.<Boolean>createBuilder()
+                                .name(Component.literal("Show Sneak/Sprint Row"))
+                                .binding(true, () -> cfg.showSneakSprintRow, v -> cfg.showSneakSprintRow = v)
+                                .controller(TickBoxControllerBuilder::create)
+                                .build())
+                        .option(Option.<Boolean>createBuilder()
                                 .name(Component.literal("Press Animation"))
                                 .binding(true, () -> cfg.pressAnimation, v -> cfg.pressAnimation = v)
                                 .controller(TickBoxControllerBuilder::create)
@@ -192,11 +230,6 @@ public class ModMenuIntegration implements ModMenuApi {
                         .option(Option.<Boolean>createBuilder()
                                 .name(Component.literal("Tick Synced Key Presses"))
                                 .binding(false, () -> cfg.tickSyncedKeyPresses, v -> cfg.tickSyncedKeyPresses = v)
-                                .controller(TickBoxControllerBuilder::create)
-                                .build())
-                        .option(Option.<Boolean>createBuilder()
-                                .name(Component.literal("Show Sneak / Sprint Row"))
-                                .binding(true, () -> cfg.showSneakSprintRow, v -> cfg.showSneakSprintRow = v)
                                 .controller(TickBoxControllerBuilder::create)
                                 .build())
                         .build())
@@ -227,22 +260,8 @@ public class ModMenuIntegration implements ModMenuApi {
                                 .binding(false, () -> cfg.rainbowBackgroundPressed, v -> cfg.rainbowBackgroundPressed = v)
                                 .controller(TickBoxControllerBuilder::create)
                                 .build())
-                        .option(Option.<Boolean>createBuilder()
-                                .name(Component.literal("Key Text Shadow"))
-                                .binding(false, () -> cfg.keyTextShadow, v -> {
-                                    cfg.keyTextShadow = v;
-                                    shadowOptionAvailability.update();
-                                })
-                                .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
-                                .build())
-                        .option(Option.<Boolean>createBuilder()
-                                .name(Component.literal("Pressed Key Text Shadow"))
-                                .binding(false, () -> cfg.keyPressedTextShadow, v -> {
-                                    cfg.keyPressedTextShadow = v;
-                                    shadowOptionAvailability.update();
-                                })
-                                .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
-                                .build())
+                        .option(keyTextShadowOption)
+                        .option(keyPressedTextShadowOption)
                         .option(customShadowColorsOption)
                         .option(keyTextShadowColorOption)
                         .option(keyPressedTextShadowColorOption)
