@@ -49,7 +49,7 @@ public final class HudRenderer {
         ctx.text(tr, component, x, y, color, false);
     }
 
-    public static void drawDotWithTrail(GuiGraphicsExtractor ctx, int dotSize, int fgColor) {
+    public static void drawDotWithTrail(GuiGraphicsExtractor ctx, int dotSize, int fgColor, boolean shadow, int shadowColor, boolean customShadowColor) {
         double scale    = Minecraft.getInstance().getWindow().getGuiScale();
         int    trailLen = MouseTracker.getTrailLength();
         long   now      = System.currentTimeMillis();
@@ -60,18 +60,49 @@ public final class HudRenderer {
             float posFrac  = 1f - (float) i / trailLen;
             float frac     = timeFrac * posFrac; // both time AND position affect fade
             if (frac <= 0) continue;
-            drawDotAt(ctx, MouseTracker.getTrailPxX(i), MouseTracker.getTrailPxY(i),
-                    scale, dotSize, (((int)(frac * 0.1f * 255)) << 24) | (fgColor & 0x00FFFFFF));
+            int trailColor = (((int)(frac * 0.1f * 255)) << 24) | (fgColor & 0x00FFFFFF);
+            drawDotAtWithShadow(ctx, MouseTracker.getTrailPxX(i), MouseTracker.getTrailPxY(i),
+                    scale, dotSize, trailColor, shadow, shadowColor, customShadowColor);
         }
 
         // Static center dot at half opacity
         int centerColor = ((((fgColor >> 24) & 0xFF) / 2) << 24) | (fgColor & 0x00FFFFFF);
-        drawDotAt(ctx, MouseTracker.getCenterPxX(), MouseTracker.getCenterPxY(),
-                scale, dotSize, centerColor);
+        drawDotAtWithShadow(ctx, MouseTracker.getCenterPxX(), MouseTracker.getCenterPxY(),
+                scale, dotSize, centerColor, shadow, shadowColor, customShadowColor);
 
         // Main moving dot
-        drawDotAt(ctx, MouseTracker.getRenderPxX(), MouseTracker.getRenderPxY(),
-                scale, dotSize, fgColor);
+        drawDotAtWithShadow(ctx, MouseTracker.getRenderPxX(), MouseTracker.getRenderPxY(),
+                scale, dotSize, fgColor, shadow, shadowColor, customShadowColor);
+    }
+
+    private static void drawDotAtWithShadow(GuiGraphicsExtractor ctx, double pxX, double pxY,
+                                             double scale, int size, int color,
+                                             boolean shadow, int shadowColor, boolean customShadowColor) {
+        if (shadow) {
+            int alpha = (color >>> 24) & 0xFF;
+            int resolvedShadowColor = customShadowColor
+                    ? withAlpha(shadowColor, multiplyAlpha(shadowColor, alpha))
+                    : defaultShadowColor(color);
+            drawDotAt(ctx, pxX + scale, pxY + scale, scale, size, resolvedShadowColor);
+        }
+        drawDotAt(ctx, pxX, pxY, scale, size, color);
+    }
+
+    private static int defaultShadowColor(int color) {
+        int alpha = (color >>> 24) & 0xFF;
+        int r = ((color >> 16) & 0xFF) / 4;
+        int g = ((color >> 8) & 0xFF) / 4;
+        int b = (color & 0xFF) / 4;
+        return (alpha << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private static int multiplyAlpha(int color, int alpha) {
+        int colorAlpha = (color >>> 24) & 0xFF;
+        return colorAlpha * alpha / 255;
+    }
+
+    private static int withAlpha(int color, int alpha) {
+        return (color & 0x00FFFFFF) | ((alpha & 0xFF) << 24);
     }
 
     private static void drawDotAt(GuiGraphicsExtractor ctx, double pxX, double pxY,

@@ -99,7 +99,7 @@ public class KeystrokeHud {
         HudRenderer.drawTexture(ctx, HudTextures.KEY_LMB, lay.stripLmbX, lay.rowMouse, lay.stripLmbW, hH, resolveBg(cfg, lmbT, rainbowBgIdle, rainbowBgPressed));
         HudRenderer.drawCenteredNumber(ctx, showClicks ? lmbCps.getCps() : 0, lay.stripLmbX, lay.rowMouse, lay.stripLmbW, hH, resolveFg(cfg, lmbT, rainbowFgIdle, rainbowFgPressed), resolveTextShadow(cfg, lmbT), resolveTextShadowColor(cfg, lmbT), cfg.useCustomTextShadowColor);
         HudRenderer.drawTexture(ctx, HudTextures.KEY_MOUSE_CENTER, lay.stripCenterX, lay.rowMouse, lay.stripCenterW, hH, resolveIdleBg(cfg, rainbowBgIdle));
-        HudRenderer.drawDotWithTrail(ctx, HudLayout.DOT_SIZE, resolveIdleFg(cfg, rainbowFgIdle));
+        HudRenderer.drawDotWithTrail(ctx, HudLayout.DOT_SIZE, resolveIdleFg(cfg, rainbowFgIdle), resolveTextShadow(cfg, 0.0f), resolveTextShadowColor(cfg, 0.0f), cfg.useCustomTextShadowColor);
         HudRenderer.drawTexture(ctx, HudTextures.KEY_RMB, lay.stripRmbX, lay.rowMouse, lay.stripRmbW, hH, resolveBg(cfg, rmbT, rainbowBgIdle, rainbowBgPressed));
         HudRenderer.drawCenteredNumber(ctx, showClicks ? rmbCps.getCps() : 0, lay.stripRmbX, lay.rowMouse, lay.stripRmbW, hH, resolveFg(cfg, rmbT, rainbowFgIdle, rainbowFgPressed), resolveTextShadow(cfg, rmbT), resolveTextShadowColor(cfg, rmbT), cfg.useCustomTextShadowColor);
     }
