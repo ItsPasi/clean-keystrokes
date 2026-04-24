@@ -20,26 +20,33 @@ public final class HudRenderer {
                 x, y, 0f, 0f, w, h, 1, 1, 1, 1, color);
     }
 
-    public static void drawLabelKey(GuiGraphicsExtractor ctx, int x, int y, int w, int h,
-                                    String label, Identifier tex,
-                                    int bgColor, int fgColor, boolean shadow) {
+    public static void drawLabelKey(GuiGraphicsExtractor ctx, int x, int y, int w, int h, String label, Identifier tex, int bgColor, int fgColor, boolean shadow, int shadowColor, boolean customShadowColor) {
         drawTexture(ctx, tex, x, y, w, h, bgColor);
         var tr = Minecraft.getInstance().font;
-        ctx.text(tr, Component.literal(label),
-                x + (w - tr.width(label) + 1) / 2,
-                y + (int) Math.round((h - tr.lineHeight) / 2.0) + 1,
-                fgColor, shadow);
+        drawText(ctx, label, x + (w - tr.width(label) + 1) / 2, y + (int) Math.round((h - tr.lineHeight) / 2.0) + 1, fgColor, shadow, shadowColor, customShadowColor);
     }
 
-    public static void drawCenteredNumber(GuiGraphicsExtractor ctx, int value,
-                                          int x, int y, int w, int h,
-                                          int color, boolean shadow) {
+    public static void drawCenteredNumber(GuiGraphicsExtractor ctx, int value, int x, int y, int w, int h, int color, boolean shadow, int shadowColor, boolean customShadowColor) {
         var tr = Minecraft.getInstance().font;
         String str = String.valueOf(value);
-        ctx.text(tr, Component.literal(str),
-                x + (w - tr.width(str) + 1) / 2,
-                y + (int) Math.round((h - tr.lineHeight) / 2.0) + 1,
-                color, shadow);
+        drawText(ctx, str, x + (w - tr.width(str) + 1) / 2, y + (int) Math.round((h - tr.lineHeight) / 2.0) + 1, color, shadow, shadowColor, customShadowColor);
+    }
+
+    private static void drawText(GuiGraphicsExtractor ctx, String text, int x, int y, int color, boolean shadow, int shadowColor, boolean customShadowColor) {
+        var tr = Minecraft.getInstance().font;
+        Component component = Component.literal(text);
+
+        if (!shadow) {
+            ctx.text(tr, component, x, y, color, false);
+            return;
+        }
+        if (!customShadowColor) {
+            ctx.text(tr, component, x, y, color, true);
+            return;
+        }
+
+        ctx.text(tr, component, x + 1, y + 1, shadowColor, false);
+        ctx.text(tr, component, x, y, color, false);
     }
 
     public static void drawDotWithTrail(GuiGraphicsExtractor ctx, int dotSize, int fgColor) {

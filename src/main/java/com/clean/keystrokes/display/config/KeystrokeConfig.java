@@ -53,19 +53,25 @@ public class KeystrokeConfig {
     private static final int DEFAULT_KEY_BACKGROUND_COLOR = 0xAA000000;
     private static final int DEFAULT_KEY_PRESSED_COLOR = 0xFF000000;
     private static final int DEFAULT_KEY_PRESSED_BACKGROUND_COLOR = 0xAAFFFFFF;
+    private static final int DEFAULT_KEY_TEXT_SHADOW_COLOR = 0xFF000000;
+    private static final int DEFAULT_KEY_PRESSED_TEXT_SHADOW_COLOR = 0xFF000000;
 
     public CornerPosition position             = CornerPosition.TOP_RIGHT;
     public int  keyColor                       = DEFAULT_KEY_COLOR;
     public int  keyBackgroundColor             = DEFAULT_KEY_BACKGROUND_COLOR;
     public int  keyPressedColor                = DEFAULT_KEY_PRESSED_COLOR;
     public int  keyPressedBackgroundColor      = DEFAULT_KEY_PRESSED_BACKGROUND_COLOR;
-    public boolean textShadow                  = false;
     public boolean pressAnimation              = true;
-    public boolean tickSyncedKeyPresses     = false;
+    public boolean tickSyncedKeyPresses        = false;
     public boolean rainbowKeyNormal            = false;
     public boolean rainbowKeyPressed           = false;
     public boolean rainbowBackgroundNormal     = false;
     public boolean rainbowBackgroundPressed    = false;
+    public boolean keyTextShadow               = false;
+    public boolean keyPressedTextShadow        = false;
+    public boolean useCustomTextShadowColor    = false;
+    public int  keyTextShadowColor             = DEFAULT_KEY_TEXT_SHADOW_COLOR;
+    public int  keyPressedTextShadowColor      = DEFAULT_KEY_PRESSED_TEXT_SHADOW_COLOR;
     public boolean showSneakSprintRow          = true;
     public ColorPreset colorPreset             = ColorPreset.CLASSIC;
 

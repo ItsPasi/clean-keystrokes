@@ -41,7 +41,6 @@ public class KeystrokeHud {
         int kS               = HudLayout.KEY_SIZE;
         int hH               = HudLayout.HALF_HEIGHT;
         float delta          = tickCounter.getRealtimeDeltaTicks();
-        boolean shadow       = cfg.textShadow;
         boolean anim         = cfg.pressAnimation;
         boolean showInputs   = client.screen == null || client.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
         boolean showClicks   = client.screen == null;
@@ -78,42 +77,16 @@ public class KeystrokeHud {
         long win = client.getWindow().handle();
 
         // WASD
-        drawMovementKey(ctx, cfg, lay.col1, lay.rowW, kS, kS,
-                client.options.keyUp, HudTextures.KEY_W,
-                anim, delta, shadow,
-                rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
-
-        drawMovementKey(ctx, cfg, lay.col0, lay.rowASD, kS, kS,
-                client.options.keyLeft, HudTextures.KEY_A,
-                anim, delta, shadow,
-                rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
-
-        drawMovementKey(ctx, cfg, lay.col1, lay.rowASD, kS, kS,
-                client.options.keyDown, HudTextures.KEY_S,
-                anim, delta, shadow,
-                rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
-
-        drawMovementKey(ctx, cfg, lay.col2, lay.rowASD, kS, kS,
-                client.options.keyRight, HudTextures.KEY_D,
-                anim, delta, shadow,
-                rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
+        drawMovementKey(ctx, cfg, lay.col1, lay.rowW, kS, kS, client.options.keyUp, HudTextures.KEY_W, anim, delta, rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
+        drawMovementKey(ctx, cfg, lay.col0, lay.rowASD, kS, kS, client.options.keyLeft, HudTextures.KEY_A, anim, delta, rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
+        drawMovementKey(ctx, cfg, lay.col1, lay.rowASD, kS, kS, client.options.keyDown, HudTextures.KEY_S, anim, delta, rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
+        drawMovementKey(ctx, cfg, lay.col2, lay.rowASD, kS, kS, client.options.keyRight, HudTextures.KEY_D, anim, delta, rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
 
         // SPACE
-        drawKey(ctx, cfg, lay.spaceX, lay.rowSpace, lay.spaceW, hH,
-                "—", HudTextures.KEY_SPACE, "SPACE", client.options.keyJump,
-                anim, delta, shadow,
-                rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
-
+        drawKey(ctx, cfg, lay.spaceX, lay.rowSpace, lay.spaceW, hH, "—", HudTextures.KEY_SPACE, "SPACE", client.options.keyJump, anim, delta, rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
         if (cfg.showSneakSprintRow) {
-            drawKey(ctx, cfg, lay.sneakX, lay.rowSneakSprint, lay.sneakW, hH,
-                    "SNK", HudTextures.KEY_SNK, "SNK", client.options.keyShift,
-                    anim, delta, shadow,
-                    rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
-
-            drawKey(ctx, cfg, lay.sprintX, lay.rowSneakSprint, lay.sprintW, hH,
-                    "SPR", HudTextures.KEY_SPR, "SPR", client.options.keySprint,
-                    anim, delta, shadow,
-                    rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
+            drawKey(ctx, cfg, lay.sneakX, lay.rowSneakSprint, lay.sneakW, hH, "SNK", HudTextures.KEY_SNK, "SNK", client.options.keyShift, anim, delta, rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
+            drawKey(ctx, cfg, lay.sprintX, lay.rowSneakSprint, lay.sprintW, hH, "SPR", HudTextures.KEY_SPR, "SPR", client.options.keySprint, anim, delta, rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
         }
 
         // Mouse row
@@ -123,28 +96,12 @@ public class KeystrokeHud {
         float lmbT = anim ? KeyPressAnimator.update("LMB", lmbDown, delta) : (lmbDown ? 1f : 0f);
         float rmbT = anim ? KeyPressAnimator.update("RMB", rmbDown, delta) : (rmbDown ? 1f : 0f);
 
-        HudRenderer.drawTexture(ctx, HudTextures.KEY_LMB,
-                lay.stripLmbX, lay.rowMouse, lay.stripLmbW, hH,
-                resolveBg(cfg, lmbT, rainbowBgIdle, rainbowBgPressed));
-
-        HudRenderer.drawCenteredNumber(ctx, showClicks ? lmbCps.getCps() : 0,
-                lay.stripLmbX, lay.rowMouse, lay.stripLmbW, hH,
-                resolveFg(cfg, lmbT, rainbowFgIdle, rainbowFgPressed), shadow);
-
-        HudRenderer.drawTexture(ctx, HudTextures.KEY_MOUSE_CENTER,
-                lay.stripCenterX, lay.rowMouse, lay.stripCenterW, hH,
-                resolveIdleBg(cfg, rainbowBgIdle));
-
-        HudRenderer.drawDotWithTrail(ctx, HudLayout.DOT_SIZE,
-                resolveIdleFg(cfg, rainbowFgIdle));
-
-        HudRenderer.drawTexture(ctx, HudTextures.KEY_RMB,
-                lay.stripRmbX, lay.rowMouse, lay.stripRmbW, hH,
-                resolveBg(cfg, rmbT, rainbowBgIdle, rainbowBgPressed));
-
-        HudRenderer.drawCenteredNumber(ctx, showClicks ? rmbCps.getCps() : 0,
-                lay.stripRmbX, lay.rowMouse, lay.stripRmbW, hH,
-                resolveFg(cfg, rmbT, rainbowFgIdle, rainbowFgPressed), shadow);
+        HudRenderer.drawTexture(ctx, HudTextures.KEY_LMB, lay.stripLmbX, lay.rowMouse, lay.stripLmbW, hH, resolveBg(cfg, lmbT, rainbowBgIdle, rainbowBgPressed));
+        HudRenderer.drawCenteredNumber(ctx, showClicks ? lmbCps.getCps() : 0, lay.stripLmbX, lay.rowMouse, lay.stripLmbW, hH, resolveFg(cfg, lmbT, rainbowFgIdle, rainbowFgPressed), resolveTextShadow(cfg, lmbT), resolveTextShadowColor(cfg, lmbT), cfg.useCustomTextShadowColor);
+        HudRenderer.drawTexture(ctx, HudTextures.KEY_MOUSE_CENTER, lay.stripCenterX, lay.rowMouse, lay.stripCenterW, hH, resolveIdleBg(cfg, rainbowBgIdle));
+        HudRenderer.drawDotWithTrail(ctx, HudLayout.DOT_SIZE, resolveIdleFg(cfg, rainbowFgIdle));
+        HudRenderer.drawTexture(ctx, HudTextures.KEY_RMB, lay.stripRmbX, lay.rowMouse, lay.stripRmbW, hH, resolveBg(cfg, rmbT, rainbowBgIdle, rainbowBgPressed));
+        HudRenderer.drawCenteredNumber(ctx, showClicks ? rmbCps.getCps() : 0, lay.stripRmbX, lay.rowMouse, lay.stripRmbW, hH, resolveFg(cfg, rmbT, rainbowFgIdle, rainbowFgPressed), resolveTextShadow(cfg, rmbT), resolveTextShadowColor(cfg, rmbT), cfg.useCustomTextShadowColor);
     }
 
     private void logFirstRender(Minecraft client, KeystrokeConfig cfg, HudLayout lay,
@@ -156,7 +113,7 @@ public class KeystrokeHud {
 
         String screenName = client.screen == null ? "null" : client.screen.getClass().getName();
         CleanKeyStrokes.LOGGER.info(
-                "First Clean Keystrokes HUD render reached. scaled={}x{}, position={}, origin=({}, {}), showInputs={}, showClicks={}, hideGui={}, debugHud={}, screen={}, configPath='{}', showSneakSprintRow={}, tickSyncedKeyPresses={}, rainbowKeyNormal={}, rainbowKeyPressed={}, rainbowBackgroundNormal={}, rainbowBackgroundPressed={}, preset={}, colors={key={}, bg={}, pressedKey={}, pressedBg={}}",
+                "First Clean Keystrokes HUD render reached. scaled={}x{}, position={}, origin=({}, {}), showInputs={}, showClicks={}, hideGui={}, debugHud={}, screen={}, configPath='{}', showSneakSprintRow={}, tickSyncedKeyPresses={}, rainbowKeyNormal={}, rainbowKeyPressed={}, rainbowBackgroundNormal={}, rainbowBackgroundPressed={}, keyTextShadow={}, keyPressedTextShadow={}, useCustomTextShadowColor={}, preset={}, colors={key={}, bg={}, pressedKey={}, pressedBg={}, shadow={}, pressedShadow={}}",
                 client.getWindow().getGuiScaledWidth(),
                 client.getWindow().getGuiScaledHeight(),
                 cfg.position,
@@ -174,11 +131,16 @@ public class KeystrokeHud {
                 cfg.rainbowKeyPressed,
                 cfg.rainbowBackgroundNormal,
                 cfg.rainbowBackgroundPressed,
+                cfg.keyTextShadow,
+                cfg.keyPressedTextShadow,
+                cfg.useCustomTextShadowColor,
                 cfg.colorPreset,
                 toArgbHex(cfg.keyColor),
                 toArgbHex(cfg.keyBackgroundColor),
                 toArgbHex(cfg.keyPressedColor),
-                toArgbHex(cfg.keyPressedBackgroundColor)
+                toArgbHex(cfg.keyPressedBackgroundColor),
+                toArgbHex(cfg.keyTextShadowColor),
+                toArgbHex(cfg.keyPressedTextShadowColor)
         );
     }
 
@@ -190,7 +152,7 @@ public class KeystrokeHud {
                          int x, int y, int w, int h,
                          String label, net.minecraft.resources.Identifier tex,
                          String animKey, KeyMapping key,
-                         boolean anim, float delta, boolean shadow,
+                         boolean anim, float delta,
                          int rainbowFgIdle, int rainbowFgPressed,
                          int rainbowBgIdle, int rainbowBgPressed,
                          boolean showInputs) {
@@ -200,21 +162,20 @@ public class KeystrokeHud {
         int bg = resolveBg(cfg, t, rainbowBgIdle, rainbowBgPressed);
         int fg = resolveFg(cfg, t, rainbowFgIdle, rainbowFgPressed);
 
-        HudRenderer.drawLabelKey(ctx, x, y, w, h, label, tex, bg, fg, shadow);
+        HudRenderer.drawLabelKey(ctx, x, y, w, h, label, tex, bg, fg, resolveTextShadow(cfg, t), resolveTextShadowColor(cfg, t), cfg.useCustomTextShadowColor);
     }
 
     private void drawMovementKey(GuiGraphicsExtractor ctx, KeystrokeConfig cfg,
                                  int x, int y, int w, int h,
                                  KeyMapping key, net.minecraft.resources.Identifier tex,
-                                 boolean anim, float delta, boolean shadow,
+                                 boolean anim, float delta,
                                  int rainbowFgIdle, int rainbowFgPressed,
                                  int rainbowBgIdle, int rainbowBgPressed,
                                  boolean showInputs) {
         String label = getKeyLabel(key);
-        drawKey(ctx, cfg, x, y, w, h, label, tex, label, key,
-                anim, delta, shadow,
-                rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
+        drawKey(ctx, cfg, x, y, w, h, label, tex, label, key, anim, delta, rainbowFgIdle, rainbowFgPressed, rainbowBgIdle, rainbowBgPressed, showInputs);
     }
+
     // Rainbow Colors
     private int resolveFg(KeystrokeConfig cfg, float t, int rainbowIdle, int rainbowPressed) {
         int idleColor = cfg.rainbowKeyNormal ? rainbowIdle : cfg.keyColor;
@@ -231,6 +192,13 @@ public class KeystrokeHud {
     }
     private int resolveIdleBg(KeystrokeConfig cfg, int rainbowBackgroundColor) {
         return cfg.rainbowBackgroundNormal ? rainbowBackgroundColor : cfg.keyBackgroundColor;
+    }
+    // Text Shadow
+    private boolean resolveTextShadow(KeystrokeConfig cfg, float t) {
+        return t >= 0.5f ? cfg.keyPressedTextShadow : cfg.keyTextShadow;
+    }
+    private int resolveTextShadowColor(KeystrokeConfig cfg, float t) {
+        return t >= 0.5f ? cfg.keyPressedTextShadowColor : cfg.keyTextShadowColor;
     }
 
     private String getKeyLabel(KeyMapping key) {
