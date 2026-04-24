@@ -196,6 +196,16 @@ public class ModMenuIntegration implements ModMenuApi {
                 .controller(opt -> DoubleSliderControllerBuilder.create(opt).range(0.0, 100.0).step(0.5).formatValue(v -> Component.literal(String.format("%.1f%%", v))))
                 .build();
 
+
+        Option<Double> hudScaleOption = Option.<Double>createBuilder()
+                .name(Component.literal("Scale"))
+                .binding(1.0, () -> cfg.hudScale, v -> cfg.hudScale = v)
+                .controller(opt -> DoubleSliderControllerBuilder.create(opt)
+                        .range(0.5, 2.0)
+                        .step(0.05)
+                        .formatValue(v -> Component.literal(String.format("%.2fx", v))))
+                .build();
+
         Option<KeystrokeConfig.CornerPosition> positionOption = Option.<KeystrokeConfig.CornerPosition>createBuilder()
                 .name(Component.literal("Position"))
                 .binding(KeystrokeConfig.CornerPosition.TOP_RIGHT,
@@ -328,6 +338,7 @@ public class ModMenuIntegration implements ModMenuApi {
                         .option(positionOption)
                         .option(customPositionXOption)
                         .option(customPositionYOption)
+                        .option(hudScaleOption)
                         .option(Option.<Boolean>createBuilder()
                                 .name(Component.literal("Show Sneak/Sprint Row"))
                                 .binding(true, () -> cfg.showSneakSprintRow, v -> cfg.showSneakSprintRow = v)

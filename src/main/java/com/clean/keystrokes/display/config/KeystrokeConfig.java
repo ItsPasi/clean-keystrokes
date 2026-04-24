@@ -87,6 +87,7 @@ public class KeystrokeConfig {
     public CornerPosition position             = CornerPosition.TOP_RIGHT;
     public double  customPositionXPercent      = 50.0;
     public double  customPositionYPercent      = 50.0;
+    public double  hudScale                  = 1.0;
     public int  keyColor                       = DEFAULT_KEY_COLOR;
     public int  keyBackgroundColor             = DEFAULT_KEY_BACKGROUND_COLOR;
     public int  keyPressedColor                = DEFAULT_KEY_PRESSED_COLOR;

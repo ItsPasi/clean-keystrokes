@@ -38,8 +38,8 @@ public class KeystrokeHud {
 
         KeystrokeConfig cfg  = KeystrokeConfig.get();
         HudLayout lay        = new HudLayout(cfg);
-        int kS               = HudLayout.KEY_SIZE;
-        int hH               = HudLayout.HALF_HEIGHT;
+        int kS               = lay.keySize;
+        int hH               = lay.halfHeight;
         float delta          = tickCounter.getRealtimeDeltaTicks();
         boolean anim         = cfg.pressAnimation;
         boolean showInputs   = client.screen == null || client.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
@@ -76,7 +76,7 @@ public class KeystrokeHud {
                 lay.rowMouse,
                 lay.stripCenterW,
                 hH,
-                HudLayout.DOT_SIZE,
+                lay.dotSize,
                 delta
         );
 
@@ -103,11 +103,11 @@ public class KeystrokeHud {
         float rmbT = anim ? KeyPressAnimator.update("RMB", rmbDown, delta) : (rmbDown ? 1f : 0f);
 
         HudRenderer.drawTexture(ctx, HudTextures.KEY_LMB, lay.stripLmbX, lay.rowMouse, lay.stripLmbW, hH, resolveBg(cfg, lmbT, rainbowBgIdle, rainbowBgPressed));
-        HudRenderer.drawCenteredNumber(ctx, showClicks ? lmbCps.getCps() : 0, lay.stripLmbX, lay.rowMouse, lay.stripLmbW, hH, resolveFg(cfg, lmbT, rainbowFgIdle, rainbowFgPressed), resolveTextShadow(cfg, lmbT), resolveTextShadowColor(cfg, lmbT, rainbowShadowIdle, rainbowShadowPressed), resolveTextShadowUsesCustomColor(cfg, lmbT));
+        HudRenderer.drawCenteredNumber(ctx, showClicks ? lmbCps.getCps() : 0, lay.stripLmbX, lay.rowMouse, lay.stripLmbW, hH, resolveFg(cfg, lmbT, rainbowFgIdle, rainbowFgPressed), resolveTextShadow(cfg, lmbT), resolveTextShadowColor(cfg, lmbT, rainbowShadowIdle, rainbowShadowPressed), resolveTextShadowUsesCustomColor(cfg, lmbT), lay.scale);
         HudRenderer.drawTexture(ctx, HudTextures.KEY_MOUSE_CENTER, lay.stripCenterX, lay.rowMouse, lay.stripCenterW, hH, resolveIdleBg(cfg, rainbowBgIdle));
-        HudRenderer.drawDotWithTrail(ctx, HudLayout.DOT_SIZE, resolveIdleFg(cfg, rainbowFgIdle), resolveTextShadow(cfg, 0.0f), resolveTextShadowColor(cfg, 0.0f, rainbowShadowIdle, rainbowShadowPressed), resolveTextShadowUsesCustomColor(cfg, 0.0f));
+        HudRenderer.drawDotWithTrail(ctx, lay.dotSize, resolveIdleFg(cfg, rainbowFgIdle), resolveTextShadow(cfg, 0.0f), resolveTextShadowColor(cfg, 0.0f, rainbowShadowIdle, rainbowShadowPressed), resolveTextShadowUsesCustomColor(cfg, 0.0f));
         HudRenderer.drawTexture(ctx, HudTextures.KEY_RMB, lay.stripRmbX, lay.rowMouse, lay.stripRmbW, hH, resolveBg(cfg, rmbT, rainbowBgIdle, rainbowBgPressed));
-        HudRenderer.drawCenteredNumber(ctx, showClicks ? rmbCps.getCps() : 0, lay.stripRmbX, lay.rowMouse, lay.stripRmbW, hH, resolveFg(cfg, rmbT, rainbowFgIdle, rainbowFgPressed), resolveTextShadow(cfg, rmbT), resolveTextShadowColor(cfg, rmbT, rainbowShadowIdle, rainbowShadowPressed), resolveTextShadowUsesCustomColor(cfg, rmbT));
+        HudRenderer.drawCenteredNumber(ctx, showClicks ? rmbCps.getCps() : 0, lay.stripRmbX, lay.rowMouse, lay.stripRmbW, hH, resolveFg(cfg, rmbT, rainbowFgIdle, rainbowFgPressed), resolveTextShadow(cfg, rmbT), resolveTextShadowColor(cfg, rmbT, rainbowShadowIdle, rainbowShadowPressed), resolveTextShadowUsesCustomColor(cfg, rmbT), lay.scale);
     }
 
     private void logFirstRender(Minecraft client, KeystrokeConfig cfg, HudLayout lay,
@@ -119,9 +119,10 @@ public class KeystrokeHud {
 
         String screenName = client.screen == null ? "null" : client.screen.getClass().getName();
         CleanKeyStrokes.LOGGER.info(
-                "First Clean Keystrokes HUD render reached. scaled={}x{}, position={}, origin=({}, {}), showInputs={}, showClicks={}, hideGui={}, debugHud={}, screen={}, configPath='{}', showSneakSprintRow={}, tickSyncedKeyPresses={}, rainbowKeyNormal={}, rainbowKeyPressed={}, rainbowBackgroundNormal={}, rainbowBackgroundPressed={}, rainbowKeyTextShadow={}, rainbowKeyPressedTextShadow={}, keyTextShadow={}, keyPressedTextShadow={}, useCustomTextShadowColor={}, preset={}, colors={key={}, bg={}, pressedKey={}, pressedBg={}, shadow={}, pressedShadow={}}",
+                "First Clean Keystrokes HUD render reached. scaled={}x{}, hudScale={}, position={}, origin=({}, {}), showInputs={}, showClicks={}, hideGui={}, debugHud={}, screen={}, configPath='{}', showSneakSprintRow={}, tickSyncedKeyPresses={}, rainbowKeyNormal={}, rainbowKeyPressed={}, rainbowBackgroundNormal={}, rainbowBackgroundPressed={}, rainbowKeyTextShadow={}, rainbowKeyPressedTextShadow={}, keyTextShadow={}, keyPressedTextShadow={}, useCustomTextShadowColor={}, preset={}, colors={key={}, bg={}, pressedKey={}, pressedBg={}, shadow={}, pressedShadow={}}",
                 client.getWindow().getGuiScaledWidth(),
                 client.getWindow().getGuiScaledHeight(),
+                cfg.hudScale,
                 cfg.position,
                 lay.originX,
                 lay.originY,
@@ -171,7 +172,7 @@ public class KeystrokeHud {
         int bg = resolveBg(cfg, t, rainbowBgIdle, rainbowBgPressed);
         int fg = resolveFg(cfg, t, rainbowFgIdle, rainbowFgPressed);
 
-        HudRenderer.drawLabelKey(ctx, x, y, w, h, label, tex, bg, fg, resolveTextShadow(cfg, t), resolveTextShadowColor(cfg, t, rainbowShadowIdle, rainbowShadowPressed), resolveTextShadowUsesCustomColor(cfg, t));
+        HudRenderer.drawLabelKey(ctx, x, y, w, h, label, tex, bg, fg, resolveTextShadow(cfg, t), resolveTextShadowColor(cfg, t, rainbowShadowIdle, rainbowShadowPressed), resolveTextShadowUsesCustomColor(cfg, t), cfg.hudScale);
     }
 
     private void drawMovementKey(GuiGraphicsExtractor ctx, KeystrokeConfig cfg,
