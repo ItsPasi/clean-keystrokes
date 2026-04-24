@@ -57,6 +57,9 @@ public class KeystrokeConfig {
     private static final int DEFAULT_KEY_PRESSED_TEXT_SHADOW_COLOR = 0xFF000000;
 
     public CornerPosition position             = CornerPosition.TOP_RIGHT;
+    public boolean useCustomPosition           = false;
+    public double  customPositionXPercent      = 50.0;
+    public double  customPositionYPercent      = 50.0;
     public int  keyColor                       = DEFAULT_KEY_COLOR;
     public int  keyBackgroundColor             = DEFAULT_KEY_BACKGROUND_COLOR;
     public int  keyPressedColor                = DEFAULT_KEY_PRESSED_COLOR;

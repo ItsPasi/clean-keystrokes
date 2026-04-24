@@ -57,6 +57,30 @@ public class ModMenuIntegration implements ModMenuApi {
                 .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
                 .build();
 
+        Option<Double> customPositionXOption = Option.<Double>createBuilder()
+                .name(Component.literal("Horizontal Position (%)"))
+                .binding(50.0, () -> cfg.customPositionXPercent, v -> cfg.customPositionXPercent = v)
+                .available(cfg.useCustomPosition)
+                .controller(opt -> DoubleSliderControllerBuilder.create(opt).range(0.0, 100.0).step(0.5).formatValue(v -> Component.literal(String.format("%.1f%%", v))))
+                .build();
+
+        Option<Double> customPositionYOption = Option.<Double>createBuilder()
+                .name(Component.literal("Vertical Position (%)"))
+                .binding(50.0, () -> cfg.customPositionYPercent, v -> cfg.customPositionYPercent = v)
+                .available(cfg.useCustomPosition)
+                .controller(opt -> DoubleSliderControllerBuilder.create(opt).range(0.0, 100.0).step(0.5).formatValue(v -> Component.literal(String.format("%.1f%%", v))))
+                .build();
+
+        Option<Boolean> customPositionOption = Option.<Boolean>createBuilder()
+                .name(Component.literal("Custom Position"))
+                .binding(false, () -> cfg.useCustomPosition, v -> cfg.useCustomPosition = v)
+                .listener((opt, value) -> {
+                    customPositionXOption.setAvailable(value);
+                    customPositionYOption.setAvailable(value);
+                })
+                .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
+                .build();
+
         return YetAnotherConfigLib.createBuilder()
                 .title(Component.literal("Clean Keystroke Settings"))
                 .category(ConfigCategory.createBuilder()
@@ -69,6 +93,9 @@ public class ModMenuIntegration implements ModMenuApi {
                                 .controller(opt -> EnumControllerBuilder.create(opt)
                                         .enumClass(KeystrokeConfig.CornerPosition.class))
                                 .build())
+                        .option(customPositionOption)
+                        .option(customPositionXOption)
+                        .option(customPositionYOption)
                         .option(Option.<Boolean>createBuilder()
                                 .name(Component.literal("Press Animation"))
                                 .binding(true, () -> cfg.pressAnimation, v -> cfg.pressAnimation = v)

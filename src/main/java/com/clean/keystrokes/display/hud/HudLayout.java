@@ -48,11 +48,18 @@ public final class HudLayout {
                 + g * (cfg.showSneakSprintRow ? 4 : 3);
 
         int ox, oy;
-        switch (cfg.position) {
-            case TOP_RIGHT    -> { ox = screenW - gridW - MARGIN; oy = MARGIN; }
-            case BOTTOM_LEFT  -> { ox = MARGIN;                   oy = screenH - gridH - MARGIN; }
-            case BOTTOM_RIGHT -> { ox = screenW - gridW - MARGIN; oy = screenH - gridH - MARGIN; }
-            default           -> { ox = MARGIN;                   oy = MARGIN; }
+        if (cfg.useCustomPosition) {
+            int maxX = Math.max(0, screenW - gridW - MARGIN);
+            int maxY = Math.max(0, screenH - gridH - MARGIN);
+            ox = (int) Math.round(maxX * (clampPercent(cfg.customPositionXPercent) / 100.0));
+            oy = (int) Math.round(maxY * (clampPercent(cfg.customPositionYPercent) / 100.0));
+        } else {
+            switch (cfg.position) {
+                case TOP_RIGHT    -> { ox = screenW - gridW - MARGIN; oy = MARGIN; }
+                case BOTTOM_LEFT  -> { ox = MARGIN;                   oy = screenH - gridH - MARGIN; }
+                case BOTTOM_RIGHT -> { ox = screenW - gridW - MARGIN; oy = screenH - gridH - MARGIN; }
+                default           -> { ox = MARGIN;                   oy = MARGIN; }
+            }
         }
         originX = ox;
         originY = oy;
@@ -87,5 +94,9 @@ public final class HudLayout {
         stripCenterW = kS + g * 2;
         stripRmbX    = originX + kS + stripCenterW;
         stripRmbW    = kS;
+    }
+
+    private static double clampPercent(double value) {
+        return Math.clamp(value, 0.0, 100.0);
     }
 }
