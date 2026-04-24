@@ -34,15 +34,24 @@ public class KeystrokeConfig {
         private final boolean keyTextShadow;
         private final boolean keyPressedTextShadow;
         private final boolean useCustomTextShadowColor;
+        private final boolean rainbowKeyTextShadow;
+        private final boolean rainbowKeyPressedTextShadow;
         private final int keyTextShadowColor;
         private final int keyPressedTextShadowColor;
 
         ColorPreset(String displayName, int keyColor, int keyBackgroundColor, int keyPressedColor, int keyPressedBackgroundColor) {
-            this(displayName, keyColor, keyBackgroundColor, keyPressedColor, keyPressedBackgroundColor, false, false, false, 0xFF000000, 0xFF000000);
+            this(displayName, keyColor, keyBackgroundColor, keyPressedColor, keyPressedBackgroundColor, false, false, false, false, false, 0xFF000000, 0xFF000000);
         }
 
         ColorPreset(String displayName, int keyColor, int keyBackgroundColor, int keyPressedColor, int keyPressedBackgroundColor,
                     boolean keyTextShadow, boolean keyPressedTextShadow, boolean useCustomTextShadowColor,
+                    int keyTextShadowColor, int keyPressedTextShadowColor) {
+            this(displayName, keyColor, keyBackgroundColor, keyPressedColor, keyPressedBackgroundColor, keyTextShadow, keyPressedTextShadow, useCustomTextShadowColor, false, false, keyTextShadowColor, keyPressedTextShadowColor);
+        }
+
+        ColorPreset(String displayName, int keyColor, int keyBackgroundColor, int keyPressedColor, int keyPressedBackgroundColor,
+                    boolean keyTextShadow, boolean keyPressedTextShadow, boolean useCustomTextShadowColor,
+                    boolean rainbowKeyTextShadow, boolean rainbowKeyPressedTextShadow,
                     int keyTextShadowColor, int keyPressedTextShadowColor) {
             this.displayName = displayName;
             this.keyColor = keyColor;
@@ -52,6 +61,8 @@ public class KeystrokeConfig {
             this.keyTextShadow = keyTextShadow;
             this.keyPressedTextShadow = keyPressedTextShadow;
             this.useCustomTextShadowColor = useCustomTextShadowColor;
+            this.rainbowKeyTextShadow = rainbowKeyTextShadow;
+            this.rainbowKeyPressedTextShadow = rainbowKeyPressedTextShadow;
             this.keyTextShadowColor = keyTextShadowColor;
             this.keyPressedTextShadowColor = keyPressedTextShadowColor;
         }
@@ -86,6 +97,8 @@ public class KeystrokeConfig {
     public boolean rainbowKeyPressed           = false;
     public boolean rainbowBackgroundNormal     = false;
     public boolean rainbowBackgroundPressed    = false;
+    public boolean rainbowKeyTextShadow        = false;
+    public boolean rainbowKeyPressedTextShadow = false;
     public boolean keyTextShadow               = false;
     public boolean keyPressedTextShadow        = false;
     public boolean useCustomTextShadowColor    = false;
@@ -157,6 +170,8 @@ public class KeystrokeConfig {
         this.keyTextShadow = preset.keyTextShadow;
         this.keyPressedTextShadow = preset.keyPressedTextShadow;
         this.useCustomTextShadowColor = preset.useCustomTextShadowColor;
+        this.rainbowKeyTextShadow = preset.rainbowKeyTextShadow;
+        this.rainbowKeyPressedTextShadow = preset.rainbowKeyPressedTextShadow;
         this.keyTextShadowColor = preset.keyTextShadowColor;
         this.keyPressedTextShadowColor = preset.keyPressedTextShadowColor;
     }
@@ -181,6 +196,8 @@ public class KeystrokeConfig {
                     && preset.keyTextShadow == keyTextShadow
                     && preset.keyPressedTextShadow == keyPressedTextShadow
                     && preset.useCustomTextShadowColor == useCustomTextShadowColor
+                    && preset.rainbowKeyTextShadow == rainbowKeyTextShadow
+                    && preset.rainbowKeyPressedTextShadow == rainbowKeyPressedTextShadow
                     && preset.keyTextShadowColor == keyTextShadowColor
                     && preset.keyPressedTextShadowColor == keyPressedTextShadowColor) {
                 return preset;
