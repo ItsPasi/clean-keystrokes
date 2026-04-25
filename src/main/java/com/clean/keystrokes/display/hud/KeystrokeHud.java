@@ -7,7 +7,6 @@ import com.clean.keystrokes.display.util.KeyPressAnimator;
 import com.clean.keystrokes.display.util.MouseTracker;
 import com.clean.keystrokes.display.util.RainbowColor;
 import net.minecraft.client.util.InputUtil;
-import net.minecraft.client.render.RenderTickCounter;
 import net.minecraft.client.option.KeyBinding;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
@@ -23,8 +22,9 @@ public class KeystrokeHud {
 
     private long lastSyncedKeyPressTick = Long.MIN_VALUE;
     private final java.util.IdentityHashMap<KeyBinding, Boolean> tickSyncedKeyStates = new java.util.IdentityHashMap<>();
+    private long lastRenderNanos = -1L;
 
-    public void onHudRender(DrawContext ctx, RenderTickCounter tickCounter) {
+    public void onHudRender(DrawContext ctx) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 
@@ -40,7 +40,7 @@ public class KeystrokeHud {
         HudLayout lay        = new HudLayout(cfg);
         int kS               = lay.keySize;
         int hH               = lay.halfHeight;
-        float delta          = Math.min(tickCounter.getLastFrameDuration(), 1.0f);
+        float delta          = getFrameDeltaTicks();
         boolean anim         = cfg.pressAnimation;
         boolean showInputs   = client.currentScreen == null || client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen;
         boolean showClicks   = client.currentScreen == null;
@@ -108,6 +108,20 @@ public class KeystrokeHud {
         HudRenderer.drawDotWithTrail(ctx, lay.dotSize, resolveIdleFg(cfg, rainbowFgIdle), resolveTextShadow(cfg, 0.0f), resolveTextShadowColor(cfg, 0.0f, rainbowShadowIdle, rainbowShadowPressed), resolveTextShadowUsesCustomColor(cfg, 0.0f));
         HudRenderer.drawTexture(ctx, HudTextures.KEY_RMB, lay.stripRmbX, lay.rowMouse, lay.stripRmbW, hH, resolveBg(cfg, rmbT, rainbowBgIdle, rainbowBgPressed));
         HudRenderer.drawCenteredNumber(ctx, showClicks ? rmbCps.getCps() : 0, lay.stripRmbX, lay.rowMouse, lay.stripRmbW, hH, resolveFg(cfg, rmbT, rainbowFgIdle, rainbowFgPressed), resolveTextShadow(cfg, rmbT), resolveTextShadowColor(cfg, rmbT, rainbowShadowIdle, rainbowShadowPressed), resolveTextShadowUsesCustomColor(cfg, rmbT), lay.scale);
+    }
+
+    private float getFrameDeltaTicks() {
+        long now = System.nanoTime();
+
+        if (lastRenderNanos < 0L) {
+            lastRenderNanos = now;
+            return 0.0f;
+        }
+
+        float deltaTicks = (now - lastRenderNanos) / 1_000_000_000.0f * 20.0f;
+        lastRenderNanos = now;
+
+        return Math.min(deltaTicks, 1.0f);
     }
 
     private void logFirstRender(MinecraftClient client, KeystrokeConfig cfg, HudLayout lay,

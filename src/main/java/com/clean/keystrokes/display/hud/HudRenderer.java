@@ -1,6 +1,7 @@
 package com.clean.keystrokes.display.hud;
 
 import com.clean.keystrokes.display.util.MouseTracker;
+import com.mojang.blaze3d.systems.RenderSystem;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
@@ -14,9 +15,12 @@ public final class HudRenderer {
     private static final float TRAIL_FADE_MS = 300f;
 
     public static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int w, int h, int color) {
-        setShaderColor(ctx, color);
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        setShaderColor(color);
         ctx.drawTexture(tex, x, y, w, h, 0f, 0f, 1, 1, 1, 1);
-        ctx.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        RenderSystem.disableBlend();
     }
 
     public static void drawLabelKey(DrawContext ctx, int x, int y, int w, int h, String label, Identifier tex, int bgColor, int fgColor, boolean shadow, int shadowColor, boolean customShadowColor, double textScale) {
@@ -138,11 +142,11 @@ public final class HudRenderer {
         ctx.getMatrices().pop();
     }
 
-    private static void setShaderColor(DrawContext ctx, int color) {
+    private static void setShaderColor(int color) {
         float a = ((color >>> 24) & 0xFF) / 255.0f;
         float r = ((color >>> 16) & 0xFF) / 255.0f;
         float g = ((color >>> 8) & 0xFF) / 255.0f;
         float b = (color & 0xFF) / 255.0f;
-        ctx.setShaderColor(r, g, b, a);
+        RenderSystem.setShaderColor(r, g, b, a);
     }
 }

@@ -14,7 +14,7 @@ public class CleanKeyStrokes implements ClientModInitializer {
     @Override
     public void onInitializeClient() {
         KeystrokeHud hud = new KeystrokeHud();
-        HudRenderCallback.EVENT.register(hud::onHudRender);
+        HudRenderCallback.EVENT.register((ctx, tickDelta) -> hud.onHudRender(ctx));
         LOGGER.info("Registered Clean Keystrokes HUD");
     }
 }
