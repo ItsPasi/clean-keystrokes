@@ -1,18 +1,26 @@
 package com.clean.keystrokes.display.config;
 
+import com.clean.keystrokes.CleanKeyStrokes;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 
 public class ModMenuIntegration implements ModMenuApi {
+
+    private static final Identifier PRESET_PREVIEW = Identifier.of(
+            CleanKeyStrokes.MOD_ID,
+            "textures/gui/presets/preset_overview.png"
+    );
 
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
         return this::buildScreen;
     }
+
     private static java.awt.Color intToColor(int argb) {
         return new java.awt.Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
     }
@@ -23,22 +31,317 @@ public class ModMenuIntegration implements ModMenuApi {
 
     private Screen buildScreen(Screen parent) {
         KeystrokeConfig cfg = KeystrokeConfig.get();
+        final KeystrokeConfig.ColorPreset[] selectedPreset = {cfg.colorPreset};
+
+        class PresetSelectionState {
+            boolean applyingPreset;
+            Option<KeystrokeConfig.ColorPreset> presetOption;
+
+            void markCustom() {
+                if (applyingPreset) {
+                    return;
+                }
+                cfg.markCustomPreset();
+                selectedPreset[0] = KeystrokeConfig.ColorPreset.CUSTOM;
+                if (presetOption != null) {
+                    presetOption.requestSet(KeystrokeConfig.ColorPreset.CUSTOM);
+                }
+            }
+        }
+
+        PresetSelectionState presetSelectionState = new PresetSelectionState();
+
+        class ShadowOptionAvailability {
+            Option<Boolean> customShadowColorsOption;
+            Option<java.awt.Color> keyTextShadowColorOption;
+            Option<java.awt.Color> keyPressedTextShadowColorOption;
+            Option<Boolean> rainbowKeyTextShadowOption;
+            Option<Boolean> rainbowKeyPressedTextShadowOption;
+
+            void update() {
+                boolean anyShadowEnabled = cfg.keyTextShadow || cfg.keyPressedTextShadow;
+
+                if (!anyShadowEnabled) {
+                    cfg.useCustomTextShadowColor = false;
+                }
+
+                if (!cfg.keyTextShadow) {
+                    cfg.rainbowKeyTextShadow = false;
+                    if (rainbowKeyTextShadowOption != null) {
+                        rainbowKeyTextShadowOption.requestSet(false);
+                    }
+                }
+
+                if (!cfg.keyPressedTextShadow) {
+                    cfg.rainbowKeyPressedTextShadow = false;
+                    if (rainbowKeyPressedTextShadowOption != null) {
+                        rainbowKeyPressedTextShadowOption.requestSet(false);
+                    }
+                }
+
+                if (customShadowColorsOption != null) {
+                    customShadowColorsOption.setAvailable(anyShadowEnabled);
+                }
+
+                boolean shadowColorOptionsEnabled = anyShadowEnabled && cfg.useCustomTextShadowColor;
+                if (keyTextShadowColorOption != null) {
+                    keyTextShadowColorOption.setAvailable(shadowColorOptionsEnabled);
+                }
+                if (keyPressedTextShadowColorOption != null) {
+                    keyPressedTextShadowColorOption.setAvailable(shadowColorOptionsEnabled);
+                }
+
+                if (rainbowKeyTextShadowOption != null) {
+                    rainbowKeyTextShadowOption.setAvailable(cfg.keyTextShadow);
+                }
+                if (rainbowKeyPressedTextShadowOption != null) {
+                    rainbowKeyPressedTextShadowOption.setAvailable(cfg.keyPressedTextShadow);
+                }
+            }
+        }
+
+        ShadowOptionAvailability shadowOptionAvailability = new ShadowOptionAvailability();
+        boolean anyShadowEnabled = cfg.keyTextShadow || cfg.keyPressedTextShadow;
+        boolean shadowColorOptionsEnabled = anyShadowEnabled && cfg.useCustomTextShadowColor;
+
+        Option<java.awt.Color> keyTextShadowColorOption = Option.<java.awt.Color>createBuilder()
+                .name(Text.literal("Key Text Shadow Color"))
+                .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyTextShadowColor), v -> {
+                    cfg.keyTextShadowColor = colorToInt(v);
+                    presetSelectionState.markCustom();
+                })
+                .available(shadowColorOptionsEnabled)
+                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
+                .build();
+        shadowOptionAvailability.keyTextShadowColorOption = keyTextShadowColorOption;
+
+        Option<java.awt.Color> keyPressedTextShadowColorOption = Option.<java.awt.Color>createBuilder()
+                .name(Text.literal("Pressed Key Text Shadow Color"))
+                .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyPressedTextShadowColor), v -> {
+                    cfg.keyPressedTextShadowColor = colorToInt(v);
+                    presetSelectionState.markCustom();
+                })
+                .available(shadowColorOptionsEnabled)
+                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
+                .build();
+        shadowOptionAvailability.keyPressedTextShadowColorOption = keyPressedTextShadowColorOption;
+
+        Option<Boolean> customShadowColorsOption = Option.<Boolean>createBuilder()
+                .name(Text.literal("Custom Shadow Colors"))
+                .binding(false, () -> cfg.useCustomTextShadowColor, v -> {
+                    cfg.useCustomTextShadowColor = v;
+                    presetSelectionState.markCustom();
+                    shadowOptionAvailability.update();
+                })
+                .available(anyShadowEnabled)
+                .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
+                .build();
+        shadowOptionAvailability.customShadowColorsOption = customShadowColorsOption;
+
+        Option<Boolean> keyTextShadowOption = Option.<Boolean>createBuilder()
+                .name(Text.literal("Key Text Shadow"))
+                .binding(false, () -> cfg.keyTextShadow, v -> {
+                    cfg.keyTextShadow = v;
+                    presetSelectionState.markCustom();
+                    shadowOptionAvailability.update();
+                })
+                .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
+                .build();
+
+        Option<Boolean> keyPressedTextShadowOption = Option.<Boolean>createBuilder()
+                .name(Text.literal("Pressed Key Text Shadow"))
+                .binding(false, () -> cfg.keyPressedTextShadow, v -> {
+                    cfg.keyPressedTextShadow = v;
+                    presetSelectionState.markCustom();
+                    shadowOptionAvailability.update();
+                })
+                .controller(opt -> BooleanControllerBuilder.create(opt).coloured(true))
+                .build();
+
+        Option<Boolean> rainbowKeyTextShadowOption = Option.<Boolean>createBuilder()
+                .name(Text.literal("Rainbow Key Text Shadow"))
+                .binding(false, () -> cfg.rainbowKeyTextShadow, v -> {
+                    cfg.rainbowKeyTextShadow = v;
+                    presetSelectionState.markCustom();
+                })
+                .available(cfg.keyTextShadow)
+                .controller(TickBoxControllerBuilder::create)
+                .build();
+        shadowOptionAvailability.rainbowKeyTextShadowOption = rainbowKeyTextShadowOption;
+
+        Option<Boolean> rainbowKeyPressedTextShadowOption = Option.<Boolean>createBuilder()
+                .name(Text.literal("Rainbow Pressed Key Text Shadow"))
+                .binding(false, () -> cfg.rainbowKeyPressedTextShadow, v -> {
+                    cfg.rainbowKeyPressedTextShadow = v;
+                    presetSelectionState.markCustom();
+                })
+                .available(cfg.keyPressedTextShadow)
+                .controller(TickBoxControllerBuilder::create)
+                .build();
+        shadowOptionAvailability.rainbowKeyPressedTextShadowOption = rainbowKeyPressedTextShadowOption;
+
+        boolean customPositionSelected = cfg.position == KeystrokeConfig.CornerPosition.CUSTOM;
+
+        Option<Double> customPositionXOption = Option.<Double>createBuilder()
+                .name(Text.literal("Horizontal Position (%)"))
+                .binding(50.0, () -> cfg.customPositionXPercent, v -> cfg.customPositionXPercent = v)
+                .available(customPositionSelected)
+                .controller(opt -> DoubleSliderControllerBuilder.create(opt).range(0.0, 100.0).step(0.5).formatValue(v -> Text.literal(String.format("%.1f%%", v))))
+                .build();
+
+        Option<Double> customPositionYOption = Option.<Double>createBuilder()
+                .name(Text.literal("Vertical Position (%)"))
+                .binding(50.0, () -> cfg.customPositionYPercent, v -> cfg.customPositionYPercent = v)
+                .available(customPositionSelected)
+                .controller(opt -> DoubleSliderControllerBuilder.create(opt).range(0.0, 100.0).step(0.5).formatValue(v -> Text.literal(String.format("%.1f%%", v))))
+                .build();
+
+
+        Option<Double> hudScaleOption = Option.<Double>createBuilder()
+                .name(Text.literal("Scale"))
+                .binding(1.0, () -> cfg.hudScale, v -> cfg.hudScale = v)
+                .controller(opt -> DoubleSliderControllerBuilder.create(opt)
+                        .range(0.5, 2.0)
+                        .step(0.05)
+                        .formatValue(v -> Text.literal(String.format("%.2fx", v))))
+                .build();
+
+        Option<KeystrokeConfig.CornerPosition> positionOption = Option.<KeystrokeConfig.CornerPosition>createBuilder()
+                .name(Text.literal("Position"))
+                .binding(KeystrokeConfig.CornerPosition.TOP_RIGHT,
+                        () -> cfg.position,
+                        v -> {
+                            cfg.position = v;
+                            boolean custom = v == KeystrokeConfig.CornerPosition.CUSTOM;
+                            customPositionXOption.setAvailable(custom);
+                            customPositionYOption.setAvailable(custom);
+                        })
+                .controller(opt -> EnumControllerBuilder.create(opt)
+                        .enumClass(KeystrokeConfig.CornerPosition.class))
+                .build();
+
+        Option<java.awt.Color> keyTextColorOption = Option.<java.awt.Color>createBuilder()
+                .name(Text.literal("Key Text Color"))
+                .binding(intToColor(0xFFFFFFFF), () -> intToColor(cfg.keyColor), v -> {
+                    cfg.keyColor = colorToInt(v);
+                    presetSelectionState.markCustom();
+                })
+                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
+                .build();
+
+        Option<java.awt.Color> keyPressedTextColorOption = Option.<java.awt.Color>createBuilder()
+                .name(Text.literal("Pressed Key Text Color"))
+                .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyPressedColor), v -> {
+                    cfg.keyPressedColor = colorToInt(v);
+                    presetSelectionState.markCustom();
+                })
+                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
+                .build();
+
+        Option<java.awt.Color> keyBackgroundColorOption = Option.<java.awt.Color>createBuilder()
+                .name(Text.literal("Key Background Color"))
+                .binding(intToColor(0xAA000000), () -> intToColor(cfg.keyBackgroundColor), v -> {
+                    cfg.keyBackgroundColor = colorToInt(v);
+                    presetSelectionState.markCustom();
+                })
+                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
+                .build();
+
+        Option<java.awt.Color> keyPressedBackgroundColorOption = Option.<java.awt.Color>createBuilder()
+                .name(Text.literal("Pressed Key Background Color"))
+                .binding(intToColor(0xAAFFFFFF), () -> intToColor(cfg.keyPressedBackgroundColor), v -> {
+                    cfg.keyPressedBackgroundColor = colorToInt(v);
+                    presetSelectionState.markCustom();
+                })
+                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
+                .build();
+
+        Option<Boolean> rainbowKeyTextOption = Option.<Boolean>createBuilder()
+                .name(Text.literal("Rainbow Key Text"))
+                .binding(false, () -> cfg.rainbowKeyNormal, v -> {
+                    cfg.rainbowKeyNormal = v;
+                    presetSelectionState.markCustom();
+                })
+                .controller(TickBoxControllerBuilder::create)
+                .build();
+
+        Option<Boolean> rainbowPressedKeyTextOption = Option.<Boolean>createBuilder()
+                .name(Text.literal("Rainbow Pressed Key Text"))
+                .binding(false, () -> cfg.rainbowKeyPressed, v -> {
+                    cfg.rainbowKeyPressed = v;
+                    presetSelectionState.markCustom();
+                })
+                .controller(TickBoxControllerBuilder::create)
+                .build();
+
+        Option<Boolean> rainbowBackgroundOption = Option.<Boolean>createBuilder()
+                .name(Text.literal("Rainbow Background"))
+                .binding(false, () -> cfg.rainbowBackgroundNormal, v -> {
+                    cfg.rainbowBackgroundNormal = v;
+                    presetSelectionState.markCustom();
+                })
+                .controller(TickBoxControllerBuilder::create)
+                .build();
+
+        Option<Boolean> rainbowPressedBackgroundOption = Option.<Boolean>createBuilder()
+                .name(Text.literal("Rainbow Pressed Background"))
+                .binding(false, () -> cfg.rainbowBackgroundPressed, v -> {
+                    cfg.rainbowBackgroundPressed = v;
+                    presetSelectionState.markCustom();
+                })
+                .controller(TickBoxControllerBuilder::create)
+                .build();
+
+        Option<KeystrokeConfig.ColorPreset> presetOption = Option.<KeystrokeConfig.ColorPreset>createBuilder()
+                .name(Text.literal("Presets"))
+                .description(OptionDescription.createBuilder()
+                        .image(PRESET_PREVIEW, 1422, 2142)
+                        .build())
+                .binding(KeystrokeConfig.ColorPreset.CLASSIC,
+                        () -> selectedPreset[0],
+                        v -> {
+                            selectedPreset[0] = v;
+                            if (!v.isCustom()) {
+                                presetSelectionState.applyingPreset = true;
+                                try {
+                                    cfg.applyPreset(v);
+                                    keyTextColorOption.requestSet(intToColor(cfg.keyColor));
+                                    keyPressedTextColorOption.requestSet(intToColor(cfg.keyPressedColor));
+                                    keyBackgroundColorOption.requestSet(intToColor(cfg.keyBackgroundColor));
+                                    keyPressedBackgroundColorOption.requestSet(intToColor(cfg.keyPressedBackgroundColor));
+                                    keyTextShadowOption.requestSet(cfg.keyTextShadow);
+                                    keyPressedTextShadowOption.requestSet(cfg.keyPressedTextShadow);
+                                    customShadowColorsOption.requestSet(cfg.useCustomTextShadowColor);
+                                    rainbowKeyTextShadowOption.requestSet(cfg.rainbowKeyTextShadow);
+                                    rainbowKeyPressedTextShadowOption.requestSet(cfg.rainbowKeyPressedTextShadow);
+                                    keyTextShadowColorOption.requestSet(intToColor(cfg.keyTextShadowColor));
+                                    keyPressedTextShadowColorOption.requestSet(intToColor(cfg.keyPressedTextShadowColor));
+                                    rainbowKeyTextOption.requestSet(cfg.rainbowKeyNormal);
+                                    rainbowPressedKeyTextOption.requestSet(cfg.rainbowKeyPressed);
+                                    rainbowBackgroundOption.requestSet(cfg.rainbowBackgroundNormal);
+                                    rainbowPressedBackgroundOption.requestSet(cfg.rainbowBackgroundPressed);
+                                    shadowOptionAvailability.update();
+                                } finally {
+                                    presetSelectionState.applyingPreset = false;
+                                }
+                            }
+                        })
+                .controller(opt -> EnumControllerBuilder.create(opt)
+                        .enumClass(KeystrokeConfig.ColorPreset.class))
+                .build();
+        presetSelectionState.presetOption = presetOption;
 
         return YetAnotherConfigLib.createBuilder()
                 .title(Text.literal("Clean Keystroke Settings"))
                 .category(ConfigCategory.createBuilder()
                         .name(Text.literal("General"))
-                        .option(Option.<KeystrokeConfig.CornerPosition>createBuilder()
-                                .name(Text.literal("Position"))
-                                .binding(KeystrokeConfig.CornerPosition.TOP_RIGHT,
-                                        () -> cfg.position,
-                                        v -> cfg.position = v)
-                                .controller(opt -> EnumControllerBuilder.create(opt)
-                                        .enumClass(KeystrokeConfig.CornerPosition.class))
-                                .build())
+                        .option(positionOption)
+                        .option(customPositionXOption)
+                        .option(customPositionYOption)
+                        .option(hudScaleOption)
                         .option(Option.<Boolean>createBuilder()
-                                .name(Text.literal("Text Shadow"))
-                                .binding(false, () -> cfg.textShadow, v -> cfg.textShadow = v)
+                                .name(Text.literal("Show Sneak/Sprint Row"))
+                                .binding(true, () -> cfg.showSneakSprintRow, v -> cfg.showSneakSprintRow = v)
                                 .controller(TickBoxControllerBuilder::create)
                                 .build())
                         .option(Option.<Boolean>createBuilder()
@@ -47,40 +350,56 @@ public class ModMenuIntegration implements ModMenuApi {
                                 .controller(TickBoxControllerBuilder::create)
                                 .build())
                         .option(Option.<Boolean>createBuilder()
-                                .name(Text.literal("Rainbow Text"))
-                                .binding(false, () -> cfg.rainbowText, v -> cfg.rainbowText = v)
-                                .controller(TickBoxControllerBuilder::create)
-                                .build())
-                        .option(Option.<Boolean>createBuilder()
-                                .name(Text.literal("Show Sneak / Sprint Row"))
-                                .binding(true, () -> cfg.showSneakSprintRow, v -> cfg.showSneakSprintRow = v)
+                                .name(Text.literal("Tick Synced Key Presses"))
+                                .binding(false, () -> cfg.tickSyncedKeyPresses, v -> cfg.tickSyncedKeyPresses = v)
                                 .controller(TickBoxControllerBuilder::create)
                                 .build())
                         .build())
                 .category(ConfigCategory.createBuilder()
-                        .name(Text.literal("Colors"))
-                        .option(Option.<java.awt.Color>createBuilder()
-                                .name(Text.literal("Key Text Color"))
-                                .binding(intToColor(0xFFFFFFFF), () -> intToColor(cfg.keyColor), v -> cfg.keyColor = colorToInt(v))
-                                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
-                                .build())
-                        .option(Option.<java.awt.Color>createBuilder()
-                                .name(Text.literal("Key Background Color"))
-                                .binding(intToColor(0xAA000000), () -> intToColor(cfg.keyBackgroundColor), v -> cfg.keyBackgroundColor = colorToInt(v))
-                                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
-                                .build())
-                        .option(Option.<java.awt.Color>createBuilder()
-                                .name(Text.literal("Pressed Key Text Color"))
-                                .binding(intToColor(0xFF000000), () -> intToColor(cfg.keyPressedColor), v -> cfg.keyPressedColor = colorToInt(v))
-                                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
-                                .build())
-                        .option(Option.<java.awt.Color>createBuilder()
-                                .name(Text.literal("Pressed Key Background Color"))
-                                .binding(intToColor(0xAAFFFFFF), () -> intToColor(cfg.keyPressedBackgroundColor), v -> cfg.keyPressedBackgroundColor = colorToInt(v))
-                                .controller(opt -> ColorControllerBuilder.create(opt).allowAlpha(true))
+                        .name(Text.literal("Appearance"))
+                        .option(presetOption)
+                        .option(keyTextColorOption)
+                        .option(keyPressedTextColorOption)
+                        .option(keyBackgroundColorOption)
+                        .option(keyPressedBackgroundColorOption)
+                        .option(keyTextShadowOption)
+                        .option(keyPressedTextShadowOption)
+                        .option(customShadowColorsOption)
+                        .option(keyTextShadowColorOption)
+                        .option(keyPressedTextShadowColorOption)
+                        .option(rainbowKeyTextShadowOption)
+                        .option(rainbowKeyPressedTextShadowOption)
+                        .option(rainbowKeyTextOption)
+                        .option(rainbowPressedKeyTextOption)
+                        .option(rainbowBackgroundOption)
+                        .option(rainbowPressedBackgroundOption)
+                        .option(Option.<Double>createBuilder()
+                                .name(Text.literal("Rainbow Speed"))
+                                .binding(1.0, () -> cfg.rainbowSpeed, v -> {
+                                            cfg.rainbowSpeed = v;
+                                            presetSelectionState.markCustom();
+                                        })
+                                .controller(opt -> DoubleSliderControllerBuilder.create(opt)
+                                        .range(0.1, 20.0)
+                                        .step(0.1)
+                                        .formatValue(v -> Text.literal(String.format("%.1fx", v))))
                                 .build())
                         .build())
-                .save(cfg::save)
+                .save(() -> {
+                    if (selectedPreset[0] == null) {
+                        selectedPreset[0] = cfg.colorPreset == null
+                                ? KeystrokeConfig.ColorPreset.CUSTOM
+                                : cfg.colorPreset;
+                    }
+
+                    if (!selectedPreset[0].isCustom()) {
+                        cfg.applyPreset(selectedPreset[0]);
+                    } else {
+                        cfg.markCustomPreset();
+                    }
+
+                    cfg.save();
+                })
                 .build()
                 .generateScreen(parent);
     }

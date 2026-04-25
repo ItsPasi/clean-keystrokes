@@ -11,7 +11,7 @@ public final class HudRenderer {
 
     private HudRenderer() {}
 
-    // Fade duration in ms — tune here
+    // Fade duration in ms
     private static final float TRAIL_FADE_MS = 300f;
 
     public static void drawTexture(DrawContext ctx, Identifier tex,
@@ -20,55 +20,110 @@ public final class HudRenderer {
                 x, y, 0f, 0f, w, h, 1, 1, 1, 1, color);
     }
 
-    public static void drawLabelKey(DrawContext ctx, int x, int y, int w, int h,
-                                    String label, Identifier tex,
-                                    int bgColor, int fgColor, boolean shadow) {
+    public static void drawLabelKey(DrawContext ctx, int x, int y, int w, int h, String label, Identifier tex, int bgColor, int fgColor, boolean shadow, int shadowColor, boolean customShadowColor, double textScale) {
         drawTexture(ctx, tex, x, y, w, h, bgColor);
         var tr = MinecraftClient.getInstance().textRenderer;
-        ctx.drawText(tr, Text.literal(label),
-                x + (w - tr.getWidth(label) + 1) / 2,
-                y + (int) Math.round((h - tr.fontHeight) / 2.0) + 1,
-                fgColor, shadow);
+        int textW = (int) Math.round(tr.getWidth(label) * textScale);
+        int textH = (int) Math.round(tr.fontHeight * textScale);
+        drawText(ctx, label, x + (w - textW + 1) / 2, y + (h - textH) / 2 + Math.max(1, (int) Math.round(textScale)), fgColor, shadow, shadowColor, customShadowColor, textScale);
     }
 
-    public static void drawCenteredNumber(DrawContext ctx, int value,
-                                          int x, int y, int w, int h,
-                                          int color, boolean shadow) {
+    public static void drawCenteredNumber(DrawContext ctx, int value, int x, int y, int w, int h, int color, boolean shadow, int shadowColor, boolean customShadowColor, double textScale) {
         var tr = MinecraftClient.getInstance().textRenderer;
         String str = String.valueOf(value);
-        ctx.drawText(tr, Text.literal(str),
-                x + (w - tr.getWidth(str) + 1) / 2,
-                y + (int) Math.round((h - tr.fontHeight) / 2.0) + 1,
-                color, shadow);
+        int textW = (int) Math.round(tr.getWidth(str) * textScale);
+        int textH = (int) Math.round(tr.fontHeight * textScale);
+        drawText(ctx, str, x + (w - textW + 1) / 2, y + (h - textH) / 2 + Math.max(1, (int) Math.round(textScale)), color, shadow, shadowColor, customShadowColor, textScale);
     }
 
-    public static void drawDotWithTrail(DrawContext ctx, int dotSize, int fgColor) {
+    private static void drawText(DrawContext ctx, String text, int x, int y, int color, boolean shadow, int shadowColor, boolean customShadowColor, double textScale) {
+        var tr = MinecraftClient.getInstance().textRenderer;
+        Text component = Text.literal(text);
+
+        if (Math.abs(textScale - 1.0) < 0.001) {
+            if (!shadow) {
+                ctx.drawText(tr, component, x, y, color, false);
+                return;
+            }
+            if (!customShadowColor) {
+                ctx.drawText(tr, component, x, y, color, true);
+                return;
+            }
+
+            ctx.drawText(tr, component, x + 1, y + 1, shadowColor, false);
+            ctx.drawText(tr, component, x, y, color, false);
+            return;
+        }
+
+        float s = (float) textScale;
+        ctx.getMatrices().translate(x, y);
+        ctx.getMatrices().scale(s, s);
+        if (!shadow) {
+            ctx.drawText(tr, component, 0, 0, color, false);
+        } else if (!customShadowColor) {
+            ctx.drawText(tr, component, 0, 0, color, true);
+        } else {
+            ctx.drawText(tr, component, 1, 1, shadowColor, false);
+            ctx.drawText(tr, component, 0, 0, color, false);
+        }
+        ctx.getMatrices().scale(1.0f / s, 1.0f / s);
+        ctx.getMatrices().translate(-x, -y);
+    }
+
+    public static void drawDotWithTrail(DrawContext ctx, int dotSize, int fgColor, boolean shadow, int shadowColor, boolean customShadowColor) {
         double scale    = MinecraftClient.getInstance().getWindow().getScaleFactor();
         int    trailLen = MouseTracker.getTrailLength();
         long   now      = System.currentTimeMillis();
-
-        int sourceAlpha = (fgColor >>> 24) & 0xFF;
 
         for (int i = trailLen - 1; i >= 1; i--) {
             long age   = now - MouseTracker.getTrailTimeMs(i);
             float timeFrac = 1f - Math.min(age / TRAIL_FADE_MS, 1f);
             float posFrac  = 1f - (float) i / trailLen;
             float frac     = timeFrac * posFrac; // both time AND position affect fade
-            if (frac <= 0 || sourceAlpha == 0) continue;
-
-            int trailAlpha = Math.clamp(Math.round(sourceAlpha * 0.1f * frac), 0, 255);
-            drawDotAt(ctx, MouseTracker.getTrailPxX(i), MouseTracker.getTrailPxY(i),
-                    scale, dotSize, (trailAlpha << 24) | (fgColor & 0x00FFFFFF));
+            if (frac <= 0) continue;
+            int trailColor = (((int)(frac * 0.1f * 255)) << 24) | (fgColor & 0x00FFFFFF);
+            drawDotAtWithShadow(ctx, MouseTracker.getTrailPxX(i), MouseTracker.getTrailPxY(i),
+                    scale, dotSize, trailColor, shadow, shadowColor, customShadowColor);
         }
 
         // Static center dot at half opacity
         int centerColor = ((((fgColor >> 24) & 0xFF) / 2) << 24) | (fgColor & 0x00FFFFFF);
-        drawDotAt(ctx, MouseTracker.getCenterPxX(), MouseTracker.getCenterPxY(),
-                scale, dotSize, centerColor);
+        drawDotAtWithShadow(ctx, MouseTracker.getCenterPxX(), MouseTracker.getCenterPxY(),
+                scale, dotSize, centerColor, shadow, shadowColor, customShadowColor);
 
         // Main moving dot
-        drawDotAt(ctx, MouseTracker.getRenderPxX(), MouseTracker.getRenderPxY(),
-                scale, dotSize, fgColor);
+        drawDotAtWithShadow(ctx, MouseTracker.getRenderPxX(), MouseTracker.getRenderPxY(),
+                scale, dotSize, fgColor, shadow, shadowColor, customShadowColor);
+    }
+
+    private static void drawDotAtWithShadow(DrawContext ctx, double pxX, double pxY,
+                                             double scale, int size, int color,
+                                             boolean shadow, int shadowColor, boolean customShadowColor) {
+        if (shadow) {
+            int alpha = (color >>> 24) & 0xFF;
+            int resolvedShadowColor = customShadowColor
+                    ? withAlpha(shadowColor, multiplyAlpha(shadowColor, alpha))
+                    : defaultShadowColor(color);
+            drawDotAt(ctx, pxX + scale, pxY + scale, scale, size, resolvedShadowColor);
+        }
+        drawDotAt(ctx, pxX, pxY, scale, size, color);
+    }
+
+    private static int defaultShadowColor(int color) {
+        int alpha = (color >>> 24) & 0xFF;
+        int r = ((color >> 16) & 0xFF) / 4;
+        int g = ((color >> 8) & 0xFF) / 4;
+        int b = (color & 0xFF) / 4;
+        return (alpha << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private static int multiplyAlpha(int color, int alpha) {
+        int colorAlpha = (color >>> 24) & 0xFF;
+        return colorAlpha * alpha / 255;
+    }
+
+    private static int withAlpha(int color, int alpha) {
+        return (color & 0x00FFFFFF) | ((alpha & 0xFF) << 24);
     }
 
     private static void drawDotAt(DrawContext ctx, double pxX, double pxY,

@@ -11,22 +11,103 @@ import java.nio.file.Path;
 
 public class KeystrokeConfig {
 
-    public enum CornerPosition { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT }
+    public enum CornerPosition { TOP_LEFT, TOP_RIGHT, BOTTOM_LEFT, BOTTOM_RIGHT, CUSTOM }
+
+    public enum ColorPreset {
+        CLASSIC("Classic", 0xFFFFFFFF, 0xAA000000, 0xFF000000, 0xAAFFFFFF),
+        INVERTED("Inverted", 0xFF000000, 0xAAFFFFFF, 0xFFFFFFFF, 0xAA000000),
+        CLEAN("Clean", 0xFFFFFFFF, 0x00FFFFFF, 0xFF000000, 0x00FFFFFF,
+                  true, true, true, 0xFF000000, 0xFFFFFFFF),
+        BEEHIVE("Beehive", 0xFFFFD000, 0xFF000000, 0xFF000000, 0xFFFFD000),
+        MINT_CREAM("Mint & Cream", 0xFF00A896, 0xFFF0F3BD, 0xFF05668D, 0xFF02C39A),
+        CYBER_GRAPE("Cyber Grape", 0xFFC7EDE4, 0xFF820B8A, 0xFF672A4E, 0xFFAF9AB2),
+        VIBRANT_MANGO("Vibrant Mango", 0xFF4200FF, 0xFFFFBC42, 0xFF000000, 0xFFD81159),
+        DIRT("Dirt", 0xFF753A38, 0xFFA1BA5A, 0xFFC4DF96, 0xFF633332),
+        RETRO("Retro", 0xFFA71D31, 0xFFF1F0CC, 0xFF3F0D12, 0xFFD5BF86),
+        CUSTOM("Custom", 0, 0, 0, 0);
+
+        private final String displayName;
+        private final int keyColor;
+        private final int keyBackgroundColor;
+        private final int keyPressedColor;
+        private final int keyPressedBackgroundColor;
+        private final boolean keyTextShadow;
+        private final boolean keyPressedTextShadow;
+        private final boolean useCustomTextShadowColor;
+        private final boolean rainbowKeyTextShadow;
+        private final boolean rainbowKeyPressedTextShadow;
+        private final int keyTextShadowColor;
+        private final int keyPressedTextShadowColor;
+
+        ColorPreset(String displayName, int keyColor, int keyBackgroundColor, int keyPressedColor, int keyPressedBackgroundColor) {
+            this(displayName, keyColor, keyBackgroundColor, keyPressedColor, keyPressedBackgroundColor, false, false, false, false, false, 0xFF000000, 0xFF000000);
+        }
+
+        ColorPreset(String displayName, int keyColor, int keyBackgroundColor, int keyPressedColor, int keyPressedBackgroundColor,
+                    boolean keyTextShadow, boolean keyPressedTextShadow, boolean useCustomTextShadowColor,
+                    int keyTextShadowColor, int keyPressedTextShadowColor) {
+            this(displayName, keyColor, keyBackgroundColor, keyPressedColor, keyPressedBackgroundColor, keyTextShadow, keyPressedTextShadow, useCustomTextShadowColor, false, false, keyTextShadowColor, keyPressedTextShadowColor);
+        }
+
+        ColorPreset(String displayName, int keyColor, int keyBackgroundColor, int keyPressedColor, int keyPressedBackgroundColor,
+                    boolean keyTextShadow, boolean keyPressedTextShadow, boolean useCustomTextShadowColor,
+                    boolean rainbowKeyTextShadow, boolean rainbowKeyPressedTextShadow,
+                    int keyTextShadowColor, int keyPressedTextShadowColor) {
+            this.displayName = displayName;
+            this.keyColor = keyColor;
+            this.keyBackgroundColor = keyBackgroundColor;
+            this.keyPressedColor = keyPressedColor;
+            this.keyPressedBackgroundColor = keyPressedBackgroundColor;
+            this.keyTextShadow = keyTextShadow;
+            this.keyPressedTextShadow = keyPressedTextShadow;
+            this.useCustomTextShadowColor = useCustomTextShadowColor;
+            this.rainbowKeyTextShadow = rainbowKeyTextShadow;
+            this.rainbowKeyPressedTextShadow = rainbowKeyPressedTextShadow;
+            this.keyTextShadowColor = keyTextShadowColor;
+            this.keyPressedTextShadowColor = keyPressedTextShadowColor;
+        }
+
+        public boolean isCustom() {
+            return this == CUSTOM;
+        }
+
+        @Override
+        public String toString() {
+            return displayName;
+        }
+    }
 
     private static final int DEFAULT_KEY_COLOR = 0xFFFFFFFF;
     private static final int DEFAULT_KEY_BACKGROUND_COLOR = 0xAA000000;
     private static final int DEFAULT_KEY_PRESSED_COLOR = 0xFF000000;
     private static final int DEFAULT_KEY_PRESSED_BACKGROUND_COLOR = 0xAAFFFFFF;
+    private static final int DEFAULT_KEY_TEXT_SHADOW_COLOR = 0xFF000000;
+    private static final int DEFAULT_KEY_PRESSED_TEXT_SHADOW_COLOR = 0xFF000000;
 
     public CornerPosition position             = CornerPosition.TOP_RIGHT;
+    public double  customPositionXPercent      = 50.0;
+    public double  customPositionYPercent      = 50.0;
+    public double  hudScale                  = 1.0;
     public int  keyColor                       = DEFAULT_KEY_COLOR;
     public int  keyBackgroundColor             = DEFAULT_KEY_BACKGROUND_COLOR;
     public int  keyPressedColor                = DEFAULT_KEY_PRESSED_COLOR;
     public int  keyPressedBackgroundColor      = DEFAULT_KEY_PRESSED_BACKGROUND_COLOR;
-    public boolean textShadow                  = false;
     public boolean pressAnimation              = true;
-    public boolean rainbowText                 = false;
+    public boolean tickSyncedKeyPresses        = false;
+    public boolean rainbowKeyNormal            = false;
+    public boolean rainbowKeyPressed           = false;
+    public boolean rainbowBackgroundNormal     = false;
+    public boolean rainbowBackgroundPressed    = false;
+    public boolean rainbowKeyTextShadow        = false;
+    public boolean rainbowKeyPressedTextShadow = false;
+    public double  rainbowSpeed                = 1.0;
+    public boolean keyTextShadow               = false;
+    public boolean keyPressedTextShadow        = false;
+    public boolean useCustomTextShadowColor    = false;
+    public int  keyTextShadowColor             = DEFAULT_KEY_TEXT_SHADOW_COLOR;
+    public int  keyPressedTextShadowColor      = DEFAULT_KEY_PRESSED_TEXT_SHADOW_COLOR;
     public boolean showSneakSprintRow          = true;
+    public ColorPreset colorPreset             = ColorPreset.CLASSIC;
 
     private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
     private static final Path PATH = FabricLoader.getInstance()
@@ -51,6 +132,9 @@ public class KeystrokeConfig {
                     CleanKeyStrokes.LOGGER.warn("Config file '{}' was empty or invalid, using defaults.", PATH);
                     instance = new KeystrokeConfig();
                 }
+                if (instance.colorPreset == null) {
+                    instance.colorPreset = instance.matchesKnownPreset();
+                }
                 if (instance.ensureVisibleColors("load")) {
                     instance.save();
                 }
@@ -70,6 +154,58 @@ public class KeystrokeConfig {
         } catch (IOException e) {
             CleanKeyStrokes.LOGGER.error("Failed to save config '{}'.", PATH, e);
         }
+    }
+
+    public void applyPreset(ColorPreset preset) {
+        if (preset == null) {
+            return;
+        }
+        this.colorPreset = preset;
+        if (preset.isCustom()) {
+            return;
+        }
+
+        this.keyColor = preset.keyColor;
+        this.keyBackgroundColor = preset.keyBackgroundColor;
+        this.keyPressedColor = preset.keyPressedColor;
+        this.keyPressedBackgroundColor = preset.keyPressedBackgroundColor;
+        this.keyTextShadow = preset.keyTextShadow;
+        this.keyPressedTextShadow = preset.keyPressedTextShadow;
+        this.useCustomTextShadowColor = preset.useCustomTextShadowColor;
+        this.rainbowKeyTextShadow = preset.rainbowKeyTextShadow;
+        this.rainbowKeyPressedTextShadow = preset.rainbowKeyPressedTextShadow;
+        this.keyTextShadowColor = preset.keyTextShadowColor;
+        this.keyPressedTextShadowColor = preset.keyPressedTextShadowColor;
+        this.rainbowKeyNormal = false;
+        this.rainbowKeyPressed = false;
+        this.rainbowBackgroundNormal = false;
+        this.rainbowBackgroundPressed = false;
+    }
+
+    public void markCustomPreset() {
+        this.colorPreset = ColorPreset.CUSTOM;
+    }
+
+    private ColorPreset matchesKnownPreset() {
+        for (ColorPreset preset : ColorPreset.values()) {
+            if (preset.isCustom()) {
+                continue;
+            }
+            if (preset.keyColor == keyColor
+                    && preset.keyBackgroundColor == keyBackgroundColor
+                    && preset.keyPressedColor == keyPressedColor
+                    && preset.keyPressedBackgroundColor == keyPressedBackgroundColor
+                    && preset.keyTextShadow == keyTextShadow
+                    && preset.keyPressedTextShadow == keyPressedTextShadow
+                    && preset.useCustomTextShadowColor == useCustomTextShadowColor
+                    && preset.rainbowKeyTextShadow == rainbowKeyTextShadow
+                    && preset.rainbowKeyPressedTextShadow == rainbowKeyPressedTextShadow
+                    && preset.keyTextShadowColor == keyTextShadowColor
+                    && preset.keyPressedTextShadowColor == keyPressedTextShadowColor) {
+                return preset;
+            }
+        }
+        return ColorPreset.CUSTOM;
     }
 
     private boolean ensureVisibleColors(String source) {

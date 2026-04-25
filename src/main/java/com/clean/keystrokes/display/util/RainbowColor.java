@@ -4,23 +4,39 @@ public final class RainbowColor {
 
     private RainbowColor() {}
 
-    // One full cycle every 10 seconds
+    // One full cycle every 10 seconds at 1.0x speed
     private static final float CYCLE_MS = 10000.0f;
+    private static final double TWO_PI = Math.PI * 2.0;
 
-    public static int get(int alpha) {
-        float hue = (System.currentTimeMillis() % (long) CYCLE_MS) / CYCLE_MS;
-        int i = (int)(hue * 6);
-        float f = hue * 6 - i;
-        float q = 1 - f;
-        int r, g, b;
-        switch (i % 6) {
-            case 0 -> { r = 255; g = (int)(f*255); b = 0; }
-            case 1 -> { r = (int)(q*255); g = 255; b = 0; }
-            case 2 -> { r = 0; g = 255; b = (int)(f*255); }
-            case 3 -> { r = 0; g = (int)(q*255); b = 255; }
-            case 4 -> { r = (int)(f*255); g = 0; b = 255; }
-            default-> { r = 255; g = 0; b = (int)(q*255); }
+    public static int get(int alpha, double speed) {
+        return getShifted(alpha, 0.0f, speed);
+    }
+
+    public static int getOpposite(int alpha, double speed) {
+        return getShifted(alpha, 0.5f, speed);
+    }
+
+    public static int getShifted(int alpha, float shift, double speed) {
+        double safeSpeed = Math.max(0.05, speed);
+        double phase = ((System.currentTimeMillis() / (double) CYCLE_MS) * safeSpeed) % 1.0;
+        phase = (phase + shift) % 1.0;
+        if (phase < 0.0) {
+            phase += 1.0;
         }
-        return (alpha << 24) | (r << 16) | (g << 8) | b;
+
+        int r = wave(phase, 0.0f);
+        int g = wave(phase, 1.0f / 3.0f);
+        int b = wave(phase, 2.0f / 3.0f);
+        return ((alpha & 0xFF) << 24) | (r << 16) | (g << 8) | b;
+    }
+
+    private static int wave(double phase, float offset) {
+        double value = Math.sin((phase + offset) * TWO_PI) * 0.5 + 0.5;
+        return clampToByte((int)Math.round(value * 255.0));
+    }
+
+    private static int clampToByte(int value) {
+        if (value < 0) return 0;
+        return Math.min(value, 255);
     }
 }
