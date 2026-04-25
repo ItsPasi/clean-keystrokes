@@ -3,7 +3,6 @@ package com.clean.keystrokes.display.hud;
 import com.clean.keystrokes.display.util.MouseTracker;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.DrawContext;
-import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -15,7 +14,9 @@ public final class HudRenderer {
     private static final float TRAIL_FADE_MS = 300f;
 
     public static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int w, int h, int color) {
-        ctx.drawTexture(RenderLayer::getGuiTextured, tex, x, y, 0f, 0f, w, h, 1, 1, 1, 1, color);
+        setShaderColor(ctx, color);
+        ctx.drawTexture(tex, x, y, w, h, 0f, 0f, 1, 1, 1, 1);
+        ctx.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     public static void drawLabelKey(DrawContext ctx, int x, int y, int w, int h, String label, Identifier tex, int bgColor, int fgColor, boolean shadow, int shadowColor, boolean customShadowColor, double textScale) {
@@ -56,7 +57,7 @@ public final class HudRenderer {
         float s = (float) textScale;
 
         ctx.getMatrices().push();
-        ctx.getMatrices().translate(x, y, 0.0);
+        ctx.getMatrices().translate((float) x, (float) y, 0.0f);
         ctx.getMatrices().scale(s, s, 1.0f);
 
         if (!shadow) {
@@ -132,8 +133,16 @@ public final class HudRenderer {
         float fy = (float) (sy - by);
 
         ctx.getMatrices().push();
-        ctx.getMatrices().translate(fx, fy, 0.0);
-        ctx.drawTexture(RenderLayer::getGuiTextured, HudTextures.DOT, bx, by, 0f, 0f, size, size, 1, 1, 1, 1, color);
+        ctx.getMatrices().translate(fx, fy, 0.0f);
+        drawTexture(ctx, HudTextures.DOT, bx, by, size, size, color);
         ctx.getMatrices().pop();
+    }
+
+    private static void setShaderColor(DrawContext ctx, int color) {
+        float a = ((color >>> 24) & 0xFF) / 255.0f;
+        float r = ((color >>> 16) & 0xFF) / 255.0f;
+        float g = ((color >>> 8) & 0xFF) / 255.0f;
+        float b = (color & 0xFF) / 255.0f;
+        ctx.setShaderColor(r, g, b, a);
     }
 }

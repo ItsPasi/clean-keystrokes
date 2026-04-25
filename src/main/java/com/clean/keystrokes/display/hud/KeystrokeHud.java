@@ -40,7 +40,7 @@ public class KeystrokeHud {
         HudLayout lay        = new HudLayout(cfg);
         int kS               = lay.keySize;
         int hH               = lay.halfHeight;
-        float delta          = tickCounter.getFixedDeltaTicks();
+        float delta          = Math.min(tickCounter.getLastFrameDuration(), 1.0f);
         boolean anim         = cfg.pressAnimation;
         boolean showInputs   = client.currentScreen == null || client.currentScreen instanceof net.minecraft.client.gui.screen.ingame.HandledScreen;
         boolean showClicks   = client.currentScreen == null;
