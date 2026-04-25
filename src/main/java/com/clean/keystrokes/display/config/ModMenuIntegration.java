@@ -1,10 +1,13 @@
 package com.clean.keystrokes.display.config;
 
 import com.clean.keystrokes.CleanKeyStrokes;
+import com.mojang.blaze3d.systems.RenderSystem;
 import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
+import dev.isxander.yacl3.gui.image.ImageRenderer;
+import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
@@ -15,6 +18,8 @@ public class ModMenuIntegration implements ModMenuApi {
             CleanKeyStrokes.MOD_ID,
             "textures/gui/presets/preset_overview.png"
     );
+    private static final int PRESET_PREVIEW_WIDTH = 1422;
+    private static final int PRESET_PREVIEW_HEIGHT = 2142;
 
     @Override
     public ConfigScreenFactory<?> getModConfigScreenFactory() {
@@ -27,6 +32,33 @@ public class ModMenuIntegration implements ModMenuApi {
 
     private static int colorToInt(java.awt.Color c) {
         return (c.getAlpha() << 24) | (c.getRed() << 16) | (c.getGreen() << 8) | c.getBlue();
+    }
+
+    private static ImageRenderer createPresetPreviewImage() {
+        return new ImageRenderer() {
+            @Override
+            public int render(DrawContext ctx, int x, int y, int renderWidth, float tickDelta) {
+                float ratio = renderWidth / (float) PRESET_PREVIEW_WIDTH;
+                int targetHeight = Math.round(PRESET_PREVIEW_HEIGHT * ratio);
+
+                RenderSystem.enableBlend();
+                RenderSystem.defaultBlendFunc();
+                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+                ctx.getMatrices().push();
+                ctx.getMatrices().translate((float) x, (float) y, 0.0f);
+                ctx.getMatrices().scale(ratio, ratio, 1.0f);
+                ctx.drawTexture(PRESET_PREVIEW, 0, 0, PRESET_PREVIEW_WIDTH, PRESET_PREVIEW_HEIGHT, 0f, 0f, PRESET_PREVIEW_WIDTH, PRESET_PREVIEW_HEIGHT, PRESET_PREVIEW_WIDTH, PRESET_PREVIEW_HEIGHT);
+                ctx.getMatrices().pop();
+
+                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+                return targetHeight;
+            }
+
+            @Override
+            public void close() {
+            }
+        };
     }
 
     private Screen buildScreen(Screen parent) {
@@ -295,7 +327,7 @@ public class ModMenuIntegration implements ModMenuApi {
         Option<KeystrokeConfig.ColorPreset> presetOption = Option.<KeystrokeConfig.ColorPreset>createBuilder()
                 .name(Text.literal("Presets"))
                 .description(OptionDescription.createBuilder()
-                        .image(PRESET_PREVIEW, 1422, 2142)
+                        .customImage(createPresetPreviewImage())
                         .build())
                 .binding(KeystrokeConfig.ColorPreset.CLASSIC,
                         () -> selectedPreset[0],
