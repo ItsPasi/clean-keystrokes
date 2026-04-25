@@ -25,7 +25,7 @@ dependencies {
 	// Yet Another Config Lib
 	modImplementation "dev.isxander:yet-another-config-lib:${project.yacl_version}"
 	// Mod Menu
-	modImplementation "com.terraformersmc:modmenu:13.0.0"
+	modImplementation "com.terraformersmc:modmenu:10.0.0"
 }
 
 processResources {
