@@ -2,8 +2,8 @@ package com.clean.keystrokes.display.hud;
 
 import com.clean.keystrokes.display.util.MouseTracker;
 import net.minecraft.client.MinecraftClient;
-import net.minecraft.client.gl.RenderPipelines;
 import net.minecraft.client.gui.DrawContext;
+import net.minecraft.client.render.RenderLayer;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
@@ -14,10 +14,8 @@ public final class HudRenderer {
     // Fade duration in ms
     private static final float TRAIL_FADE_MS = 300f;
 
-    public static void drawTexture(DrawContext ctx, Identifier tex,
-                                   int x, int y, int w, int h, int color) {
-        ctx.drawTexture(RenderPipelines.GUI_TEXTURED, tex,
-                x, y, 0f, 0f, w, h, 1, 1, 1, 1, color);
+    public static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int w, int h, int color) {
+        ctx.drawTexture(RenderLayer::getGuiTextured, tex, x, y, 0f, 0f, w, h, 1, 1, 1, 1, color);
     }
 
     public static void drawLabelKey(DrawContext ctx, int x, int y, int w, int h, String label, Identifier tex, int bgColor, int fgColor, boolean shadow, int shadowColor, boolean customShadowColor, double textScale) {
@@ -56,8 +54,11 @@ public final class HudRenderer {
         }
 
         float s = (float) textScale;
-        ctx.getMatrices().translate(x, y);
-        ctx.getMatrices().scale(s, s);
+
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(x, y, 0.0);
+        ctx.getMatrices().scale(s, s, 1.0f);
+
         if (!shadow) {
             ctx.drawText(tr, component, 0, 0, color, false);
         } else if (!customShadowColor) {
@@ -66,8 +67,8 @@ public final class HudRenderer {
             ctx.drawText(tr, component, 1, 1, shadowColor, false);
             ctx.drawText(tr, component, 0, 0, color, false);
         }
-        ctx.getMatrices().scale(1.0f / s, 1.0f / s);
-        ctx.getMatrices().translate(-x, -y);
+
+        ctx.getMatrices().pop();
     }
 
     public static void drawDotWithTrail(DrawContext ctx, int dotSize, int fgColor, boolean shadow, int shadowColor, boolean customShadowColor) {
@@ -76,29 +77,24 @@ public final class HudRenderer {
         long   now      = System.currentTimeMillis();
 
         for (int i = trailLen - 1; i >= 1; i--) {
-            long age   = now - MouseTracker.getTrailTimeMs(i);
+            long age       = now - MouseTracker.getTrailTimeMs(i);
             float timeFrac = 1f - Math.min(age / TRAIL_FADE_MS, 1f);
             float posFrac  = 1f - (float) i / trailLen;
-            float frac     = timeFrac * posFrac; // both time AND position affect fade
+            float frac     = timeFrac * posFrac;
             if (frac <= 0) continue;
             int trailColor = (((int)(frac * 0.1f * 255)) << 24) | (fgColor & 0x00FFFFFF);
-            drawDotAtWithShadow(ctx, MouseTracker.getTrailPxX(i), MouseTracker.getTrailPxY(i),
-                    scale, dotSize, trailColor, shadow, shadowColor, customShadowColor);
+            drawDotAtWithShadow(ctx, MouseTracker.getTrailPxX(i), MouseTracker.getTrailPxY(i), scale, dotSize, trailColor, shadow, shadowColor, customShadowColor);
         }
 
         // Static center dot at half opacity
         int centerColor = ((((fgColor >> 24) & 0xFF) / 2) << 24) | (fgColor & 0x00FFFFFF);
-        drawDotAtWithShadow(ctx, MouseTracker.getCenterPxX(), MouseTracker.getCenterPxY(),
-                scale, dotSize, centerColor, shadow, shadowColor, customShadowColor);
+        drawDotAtWithShadow(ctx, MouseTracker.getCenterPxX(), MouseTracker.getCenterPxY(), scale, dotSize, centerColor, shadow, shadowColor, customShadowColor);
 
         // Main moving dot
-        drawDotAtWithShadow(ctx, MouseTracker.getRenderPxX(), MouseTracker.getRenderPxY(),
-                scale, dotSize, fgColor, shadow, shadowColor, customShadowColor);
+        drawDotAtWithShadow(ctx, MouseTracker.getRenderPxX(), MouseTracker.getRenderPxY(), scale, dotSize, fgColor, shadow, shadowColor, customShadowColor);
     }
 
-    private static void drawDotAtWithShadow(DrawContext ctx, double pxX, double pxY,
-                                             double scale, int size, int color,
-                                             boolean shadow, int shadowColor, boolean customShadowColor) {
+    private static void drawDotAtWithShadow(DrawContext ctx, double pxX, double pxY, double scale, int size, int color, boolean shadow, int shadowColor, boolean customShadowColor) {
         if (shadow) {
             int alpha = (color >>> 24) & 0xFF;
             int resolvedShadowColor = customShadowColor
@@ -126,16 +122,18 @@ public final class HudRenderer {
         return (color & 0x00FFFFFF) | ((alpha & 0xFF) << 24);
     }
 
-    private static void drawDotAt(DrawContext ctx, double pxX, double pxY,
-                                  double scale, int size, int color) {
+    private static void drawDotAt(DrawContext ctx, double pxX, double pxY, double scale, int size, int color) {
         double sx = Math.round(pxX - size * scale / 2.0 - 0.5) / scale;
         double sy = Math.round(pxY - size * scale / 2.0 - 0.5) / scale;
         int    bx = (int) Math.floor(sx);
         int    by = (int) Math.floor(sy);
-        float  fx = (float)(sx - bx), fy = (float)(sy - by);
-        ctx.getMatrices().translate(fx, fy);
-        ctx.drawTexture(RenderPipelines.GUI_TEXTURED, HudTextures.DOT,
-                bx, by, 0f, 0f, size, size, 1, 1, 1, 1, color);
-        ctx.getMatrices().translate(-fx, -fy);
+
+        float fx = (float) (sx - bx);
+        float fy = (float) (sy - by);
+
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate(fx, fy, 0.0);
+        ctx.drawTexture(RenderLayer::getGuiTextured, HudTextures.DOT, bx, by, 0f, 0f, size, size, 1, 1, 1, 1, color);
+        ctx.getMatrices().pop();
     }
 }
