@@ -18,7 +18,7 @@ public class CameraMovementMixin {
     private float prevPitch = Float.NaN;
 
     @Inject(method = "updateMouse", at = @At("TAIL"))
-    private void onUpdateMouse(double timeDelta, CallbackInfo ci) {
+    private void onUpdateMouse(CallbackInfo ci) {
         MinecraftClient client = MinecraftClient.getInstance();
         if (client.player == null) return;
 

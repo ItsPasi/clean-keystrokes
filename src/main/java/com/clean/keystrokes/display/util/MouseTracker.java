@@ -40,8 +40,8 @@ public class MouseTracker {
         smoothX = smoothX * adjDecay + pendingDx * SENSITIVITY;
         smoothY = smoothY * adjDecay + pendingDy * SENSITIVITY * aspectRatio;
 
-        smoothX = Math.clamp(smoothX, -1.0, 1.0);
-        smoothY = Math.clamp(smoothY, -1.0, 1.0);
+        smoothX = Math.max(-1.0, Math.min(1.0, smoothX));
+        smoothY = Math.max(-1.0, Math.min(1.0, smoothY));
 
         if (Math.abs(smoothX) < 0.001) smoothX = 0;
         if (Math.abs(smoothY) < 0.001) smoothY = 0;

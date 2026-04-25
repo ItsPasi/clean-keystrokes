@@ -110,10 +110,10 @@ public final class HudLayout {
     }
 
     private static double clampScale(double value) {
-        return Math.clamp(value, 0.5, 2.0);
+        return Math.max(0.5, Math.min(2.0, value));
     }
 
     private static double clampPercent(double value) {
-        return Math.clamp(value, 0.0, 100.0);
+        return Math.max(0.0, Math.min(100.0, value));
     }
 }
