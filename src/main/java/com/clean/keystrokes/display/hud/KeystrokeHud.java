@@ -11,6 +11,7 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.debug.DebugScreenEntries;
 import org.lwjgl.glfw.GLFW;
 
 public class KeystrokeHud {
@@ -24,9 +25,13 @@ public class KeystrokeHud {
     private long lastSyncedKeyPressTick = Long.MIN_VALUE;
     private final java.util.IdentityHashMap<KeyMapping, Boolean> tickSyncedKeyStates = new java.util.IdentityHashMap<>();
 
+    private boolean shouldHideCleanKeystrokesForDebug(Minecraft client) {
+        return client.debugEntries.isCurrentlyEnabled(DebugScreenEntries.GAME_VERSION);
+    }
+
     public void onHudRender(GuiGraphicsExtractor ctx, DeltaTracker tickCounter) {
         Minecraft client = Minecraft.getInstance();
-        if (client.player == null) return;
+        if (client.player == null || shouldHideCleanKeystrokesForDebug(client)) return;
 
         if (client.options.hideGui) {
             if (!loggedHudHiddenSkip) {
