@@ -24,13 +24,13 @@ public class KeystrokeHud {
     private long lastSyncedKeyPressTick = Long.MIN_VALUE;
     private final java.util.IdentityHashMap<KeyBinding, Boolean> tickSyncedKeyStates = new java.util.IdentityHashMap<>();
 
-    private boolean shouldHideCleanKeystrokes(MinecraftClient client) {
+    private boolean hideOverlayOnDebugScreen(MinecraftClient client) {
         return client.getDebugHud().shouldShowDebugHud() && !client.getEntityRenderDispatcher().shouldRenderHitboxes();
     }
 
     public void onHudRender(DrawContext ctx, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null || shouldHideCleanKeystrokes(client)) return;
+        if (client.player == null || hideOverlayOnDebugScreen(client)) return;
 
         if (client.options.hudHidden) {
             if (!loggedHudHiddenSkip) {
