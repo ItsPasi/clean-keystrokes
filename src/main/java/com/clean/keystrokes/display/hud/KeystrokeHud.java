@@ -24,7 +24,7 @@ public class KeystrokeHud {
     private long lastSyncedKeyPressTick = Long.MIN_VALUE;
     private final java.util.IdentityHashMap<KeyBinding, Boolean> tickSyncedKeyStates = new java.util.IdentityHashMap<>();
 
-    private boolean shouldHideCleanKeystrokesForDebug(MinecraftClient client) {
+    private boolean hideOverlayOnDebugScreen(MinecraftClient client) {
         Boolean newDebugState = getNewDebugHudF3State(client);
         if (newDebugState != null) {
             return newDebugState;
@@ -67,7 +67,7 @@ public class KeystrokeHud {
 
     public void onHudRender(DrawContext ctx, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null || shouldHideCleanKeystrokesForDebug(client)) return;
+        if (client.player == null || hideOverlayOnDebugScreen(client)) return;
 
         if (client.options.hudHidden) {
             if (!loggedHudHiddenSkip) {
