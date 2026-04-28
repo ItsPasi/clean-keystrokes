@@ -24,9 +24,13 @@ public class KeystrokeHud {
     private final java.util.IdentityHashMap<KeyBinding, Boolean> tickSyncedKeyStates = new java.util.IdentityHashMap<>();
     private long lastRenderNanos = -1L;
 
+    private boolean shouldHideCleanKeystrokes(MinecraftClient client) {
+        return client.getDebugHud().shouldShowDebugHud() && !client.getEntityRenderDispatcher().shouldRenderHitboxes();
+    }
+
     public void onHudRender(DrawContext ctx) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null) return;
+        if (client.player == null || shouldHideCleanKeystrokes(client)) return;
 
         if (client.options.hudHidden) {
             if (!loggedHudHiddenSkip) {
