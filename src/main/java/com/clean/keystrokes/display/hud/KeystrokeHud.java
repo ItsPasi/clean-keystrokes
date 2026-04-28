@@ -24,9 +24,50 @@ public class KeystrokeHud {
     private long lastSyncedKeyPressTick = Long.MIN_VALUE;
     private final java.util.IdentityHashMap<KeyBinding, Boolean> tickSyncedKeyStates = new java.util.IdentityHashMap<>();
 
+    private boolean shouldHideCleanKeystrokesForDebug(MinecraftClient client) {
+        Boolean newDebugState = getNewDebugHudF3State(client);
+        if (newDebugState != null) {
+            return newDebugState;
+        }
+
+        return client.getDebugHud().shouldShowDebugHud();
+    }
+
+    private Boolean getNewDebugHudF3State(MinecraftClient client) {
+        Object debugHudProfile = getFieldValue(client);
+        if (debugHudProfile == null) {return null;}
+        Object result = invokeBooleanMethod(debugHudProfile);
+        return result instanceof Boolean value ? value : null;
+    }
+
+    private Object getFieldValue(Object target) {
+        for (String name : new String[]{"debugHudEntryList", "field_61504", "m"}) {
+            try {
+                java.lang.reflect.Field field = target.getClass().getDeclaredField(name);
+                field.setAccessible(true);
+                return field.get(target);
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+
+        return null;
+    }
+
+    private Object invokeBooleanMethod(Object target) {
+        for (String name : new String[]{"isF3Enabled", "method_72776", "d"}) {
+            try {
+                java.lang.reflect.Method method = target.getClass().getMethod(name);
+                return method.invoke(target);
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+
+        return null;
+    }
+
     public void onHudRender(DrawContext ctx, RenderTickCounter tickCounter) {
         MinecraftClient client = MinecraftClient.getInstance();
-        if (client.player == null) return;
+        if (client.player == null || shouldHideCleanKeystrokesForDebug(client)) return;
 
         if (client.options.hudHidden) {
             if (!loggedHudHiddenSkip) {
