@@ -7,7 +7,7 @@ public final class HudTextures {
     private HudTextures() {}
 
     private static Identifier id(String path) {
-        return Identifier.of("clean-keystrokes", "textures/" + path);
+        return new Identifier("clean-keystrokes", "textures/" + path);
     }
 
     public static final Identifier KEY_W            = id("key_w.png");

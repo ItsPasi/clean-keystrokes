@@ -6,17 +6,23 @@ import com.terraformersmc.modmenu.api.ConfigScreenFactory;
 import com.terraformersmc.modmenu.api.ModMenuApi;
 import dev.isxander.yacl3.api.*;
 import dev.isxander.yacl3.api.controller.*;
-import dev.isxander.yacl3.gui.image.ImageRenderer;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+
 public class ModMenuIntegration implements ModMenuApi {
 
-    private static final Identifier PRESET_PREVIEW = Identifier.of(
+    private static final Identifier PRESET_PREVIEW = new Identifier(
             CleanKeyStrokes.MOD_ID,
             "textures/gui/presets/preset_overview.png"
+    );
+    private static final Identifier PRESET_PREVIEW_WEBP = new Identifier(
+            CleanKeyStrokes.MOD_ID,
+            "textures/gui/presets/preset_overview.webp"
     );
     private static final int PRESET_PREVIEW_WIDTH = 1422;
     private static final int PRESET_PREVIEW_HEIGHT = 2142;
@@ -30,35 +36,151 @@ public class ModMenuIntegration implements ModMenuApi {
         return new java.awt.Color((argb >> 16) & 0xFF, (argb >> 8) & 0xFF, argb & 0xFF, (argb >> 24) & 0xFF);
     }
 
-    private static int colorToInt(java.awt.Color c) {
-        return (c.getAlpha() << 24) | (c.getRed() << 16) | (c.getGreen() << 8) | c.getBlue();
+    private static int colorToInt(java.awt.Color color) {
+        return (color.getAlpha() << 24) | (color.getRed() << 16) | (color.getGreen() << 8) | color.getBlue();
     }
 
-    private static ImageRenderer createPresetPreviewImage() {
-        return new ImageRenderer() {
-            @Override
-            public int render(DrawContext ctx, int x, int y, int renderWidth, float tickDelta) {
-                float ratio = renderWidth / (float) PRESET_PREVIEW_WIDTH;
-                int targetHeight = Math.round(PRESET_PREVIEW_HEIGHT * ratio);
+    private static OptionDescription createPresetPreviewDescription() {
+        OptionDescription.Builder builder = OptionDescription.createBuilder();
 
-                RenderSystem.enableBlend();
-                RenderSystem.defaultBlendFunc();
-                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-
-                ctx.getMatrices().push();
-                ctx.getMatrices().translate((float) x, (float) y, 0.0f);
-                ctx.getMatrices().scale(ratio, ratio, 1.0f);
-                ctx.drawTexture(PRESET_PREVIEW, 0, 0, PRESET_PREVIEW_WIDTH, PRESET_PREVIEW_HEIGHT, 0f, 0f, PRESET_PREVIEW_WIDTH, PRESET_PREVIEW_HEIGHT, PRESET_PREVIEW_WIDTH, PRESET_PREVIEW_HEIGHT);
-                ctx.getMatrices().pop();
-
-                RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
-                return targetHeight;
+        try {
+            if (tryAddBuiltInPresetPreview(builder)) {
+                return builder.build();
             }
 
-            @Override
-            public void close() {
+            Class<?> imageRendererClass = Class.forName("dev.isxander.yacl3.gui.image.ImageRenderer");
+            Method previewMethod = findPresetPreviewMethod(builder.getClass(), imageRendererClass);
+
+            if (previewMethod != null) {
+                previewMethod.invoke(builder, createPresetPreviewRenderer(imageRendererClass));
             }
-        };
+        } catch (Throwable ignored) {
+            // Older YACL builds do not have every preview-image description API.
+            // In that case, keep the config screen usable and simply skip the preview.
+        }
+
+        return builder.build();
+    }
+
+    private static boolean tryAddBuiltInPresetPreview(OptionDescription.Builder builder) {
+        for (String methodName : new String[] {"webpImage", "image"}) {
+            if (tryInvokeIdentifierPreviewMethod(builder, methodName, PRESET_PREVIEW_WEBP)) {
+                return true;
+            }
+            if (tryInvokeIdentifierPreviewMethod(builder, methodName, PRESET_PREVIEW)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean tryInvokeIdentifierPreviewMethod(OptionDescription.Builder builder, String methodName, Identifier previewId) {
+        try {
+            Method method = builder.getClass().getMethod(methodName, Identifier.class);
+            method.invoke(builder, previewId);
+            return true;
+        } catch (Throwable ignored) {
+        }
+
+        try {
+            Method method = builder.getClass().getMethod(methodName, Identifier.class, int.class, int.class);
+            method.invoke(builder, previewId, PRESET_PREVIEW_WIDTH, PRESET_PREVIEW_HEIGHT);
+            return true;
+        } catch (Throwable ignored) {
+        }
+
+        return false;
+    }
+
+    private static Method findPresetPreviewMethod(Class<?> builderClass, Class<?> imageRendererClass) {
+        for (String methodName : new String[] {"customImage", "customMessage"}) {
+            try {
+                return builderClass.getMethod(methodName, imageRendererClass);
+            } catch (NoSuchMethodException ignored) {
+            }
+        }
+
+        return null;
+    }
+
+    private static Object createPresetPreviewRenderer(Class<?> imageRendererClass) {
+        return Proxy.newProxyInstance(
+                ModMenuIntegration.class.getClassLoader(),
+                new Class<?>[] {imageRendererClass},
+                (proxy, method, args) -> {
+                    String methodName = method.getName();
+
+                    if ("render".equals(methodName) && args != null && args.length >= 4 && args[0] instanceof DrawContext context) {
+                        return renderPresetPreviewImage(
+                                context,
+                                ((Number) args[1]).intValue(),
+                                ((Number) args[2]).intValue(),
+                                ((Number) args[3]).intValue()
+                        );
+                    }
+
+                    return switch (methodName) {
+                        case "close" -> null;
+                        case "toString" -> "Clean Keystrokes Preset Preview";
+                        case "hashCode" -> System.identityHashCode(proxy);
+                        case "equals" -> args != null && args.length == 1 && proxy == args[0];
+                        default -> defaultValue(method.getReturnType());
+                    };
+
+                }
+        );
+    }
+
+    private static int renderPresetPreviewImage(DrawContext ctx, int x, int y, int renderWidth) {
+        float ratio = renderWidth / (float) PRESET_PREVIEW_WIDTH;
+        int targetHeight = Math.round(PRESET_PREVIEW_HEIGHT * ratio);
+
+        RenderSystem.enableBlend();
+        RenderSystem.defaultBlendFunc();
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+        ctx.getMatrices().push();
+        ctx.getMatrices().translate((float) x, (float) y, 0.0f);
+        ctx.getMatrices().scale(ratio, ratio, 1.0f);
+        ctx.drawTexture(PRESET_PREVIEW, 0, 0, PRESET_PREVIEW_WIDTH, PRESET_PREVIEW_HEIGHT, 0f, 0f, PRESET_PREVIEW_WIDTH, PRESET_PREVIEW_HEIGHT, PRESET_PREVIEW_WIDTH, PRESET_PREVIEW_HEIGHT);
+        ctx.getMatrices().pop();
+
+        RenderSystem.setShaderColor(1.0f, 1.0f, 1.0f, 1.0f);
+        return targetHeight;
+    }
+
+    private static Object defaultValue(Class<?> returnType) {
+        if (!returnType.isPrimitive()) {
+            return null;
+        }
+
+        if (returnType == boolean.class) {
+            return false;
+        }
+        if (returnType == char.class) {
+            return '\0';
+        }
+        if (returnType == byte.class) {
+            return (byte) 0;
+        }
+        if (returnType == short.class) {
+            return (short) 0;
+        }
+        if (returnType == int.class) {
+            return 0;
+        }
+        if (returnType == long.class) {
+            return 0L;
+        }
+        if (returnType == float.class) {
+            return 0.0f;
+        }
+        if (returnType == double.class) {
+            return 0.0d;
+        }
+
+        return null;
     }
 
     private Screen buildScreen(Screen parent) {
@@ -326,9 +448,7 @@ public class ModMenuIntegration implements ModMenuApi {
 
         Option<KeystrokeConfig.ColorPreset> presetOption = Option.<KeystrokeConfig.ColorPreset>createBuilder()
                 .name(Text.literal("Presets"))
-                .description(OptionDescription.createBuilder()
-                        .customImage(createPresetPreviewImage())
-                        .build())
+                .description(createPresetPreviewDescription())
                 .binding(KeystrokeConfig.ColorPreset.CLASSIC,
                         () -> selectedPreset[0],
                         v -> {

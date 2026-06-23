@@ -25,7 +25,58 @@ public class KeystrokeHud {
     private long lastRenderNanos = -1L;
 
     private boolean hideOverlayOnDebugScreen(MinecraftClient client) {
-        return client.getDebugHud().shouldShowDebugHud() && !client.getEntityRenderDispatcher().shouldRenderHitboxes();
+        return isDebugHudShown(client);
+    }
+
+    private boolean isDebugHudShown(MinecraftClient client) {
+        // Minecraft 1.20.x moved the debug HUD access around in mappings.
+        // Use reflection so the mod can still load when one of these names is missing.
+        try {
+            Object debugHud = invokeNoArg(client, "getDebugHud", "method_53526");
+            if (debugHud != null) {
+                Object shown = invokeNoArg(debugHud, "shouldShowDebugHud", "method_53528");
+                if (shown instanceof Boolean) {
+                    return (Boolean) shown;
+                }
+            }
+        } catch (Throwable ignored) {
+        }
+
+        try {
+            Object shown = readField(client.options);
+            if (shown instanceof Boolean) {
+                return (Boolean) shown;
+            }
+        } catch (Throwable ignored) {
+        }
+
+        return false;
+    }
+
+    private Object invokeNoArg(Object target, String... names) {
+        Class<?> type = target.getClass();
+        for (String name : names) {
+            try {
+                java.lang.reflect.Method method = type.getMethod(name);
+                method.setAccessible(true);
+                return method.invoke(target);
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+        return null;
+    }
+
+    private Object readField(Object target) {
+        Class<?> type = target.getClass();
+        for (String name : new String[]{"debugEnabled", "field_1843"}) {
+            try {
+                java.lang.reflect.Field field = type.getField(name);
+                field.setAccessible(true);
+                return field.get(target);
+            } catch (ReflectiveOperationException ignored) {
+            }
+        }
+        return null;
     }
 
     public void onHudRender(DrawContext ctx) {
@@ -147,7 +198,7 @@ public class KeystrokeHud {
                 showInputs,
                 showClicks,
                 client.options.hudHidden,
-                client.getDebugHud().shouldShowDebugHud(),
+                isDebugHudShown(client),
                 screenName,
                 KeystrokeConfig.getPath(),
                 cfg.showSneakSprintRow,
