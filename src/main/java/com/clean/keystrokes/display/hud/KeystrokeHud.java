@@ -11,6 +11,8 @@ import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.components.debug.DebugScreenEntries;
 import org.lwjgl.glfw.GLFW;
 
@@ -29,11 +31,70 @@ public class KeystrokeHud {
         return client.debugEntries.isCurrentlyEnabled(DebugScreenEntries.GAME_VERSION);
     }
 
+    private boolean isHudHidden(Minecraft client) {
+        Boolean hudHidden = getBooleanMethod(client.gui.hud, "hidden");
+        if (hudHidden != null) return hudHidden;
+
+        hudHidden = getBooleanMethod(client.gui.hud, "isHidden");
+        if (hudHidden != null) return hudHidden;
+
+        hudHidden = getBooleanField(client.gui.hud, "hidden");
+        if (hudHidden != null) return hudHidden;
+
+        hudHidden = getBooleanField(client.gui.hud, "hudHidden");
+        if (hudHidden != null) return hudHidden;
+
+        hudHidden = getBooleanField(client.options, "hideGui");
+        if (hudHidden != null) return hudHidden;
+
+        hudHidden = getBooleanField(client.options, "hudHidden");
+        return hudHidden != null && hudHidden;
+    }
+
+    private Boolean getBooleanMethod(Object target, String name) {
+        Class<?> type = target.getClass();
+        while (type != null) {
+            try {
+                java.lang.reflect.Method method = type.getDeclaredMethod(name);
+                if (method.getReturnType() == boolean.class || method.getReturnType() == Boolean.class) {
+                    method.setAccessible(true);
+                    return (Boolean) method.invoke(target);
+                }
+                return null;
+            } catch (NoSuchMethodException ignored) {
+                type = type.getSuperclass();
+            } catch (ReflectiveOperationException | RuntimeException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private Boolean getBooleanField(Object target, String name) {
+        Class<?> type = target.getClass();
+        while (type != null) {
+            try {
+                java.lang.reflect.Field field = type.getDeclaredField(name);
+                if (field.getType() == boolean.class || field.getType() == Boolean.class) {
+                    field.setAccessible(true);
+                    return (Boolean) field.get(target);
+                }
+                return null;
+            } catch (NoSuchFieldException ignored) {
+                type = type.getSuperclass();
+            } catch (ReflectiveOperationException | RuntimeException ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
     public void onHudRender(GuiGraphicsExtractor ctx, DeltaTracker tickCounter) {
         Minecraft client = Minecraft.getInstance();
         if (client.player == null || hideOverlayOnDebugScreen(client)) return;
 
-        if (client.options.hideGui) {
+        boolean hudHidden = isHudHidden(client);
+        if (hudHidden) {
             if (!loggedHudHiddenSkip) {
                 CleanKeyStrokes.LOGGER.info("Skipping Clean Keystrokes HUD render because hideGui=true.");
                 loggedHudHiddenSkip = true;
@@ -47,8 +108,9 @@ public class KeystrokeHud {
         int hH               = lay.halfHeight;
         float delta          = tickCounter.getRealtimeDeltaTicks();
         boolean anim         = cfg.pressAnimation;
-        boolean showInputs   = client.screen == null || client.screen instanceof net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-        boolean showClicks   = client.screen == null;
+        Screen currentScreen = client.gui.screen();
+        boolean showInputs   = currentScreen == null || currentScreen instanceof AbstractContainerScreen;
+        boolean showClicks   = currentScreen == null;
 
         int rainbowFgIdle = cfg.rainbowKeyNormal
                 ? RainbowColor.get((cfg.keyColor >>> 24) & 0xFF, cfg.rainbowSpeed)
@@ -122,7 +184,8 @@ public class KeystrokeHud {
         }
         loggedFirstRender = true;
 
-        String screenName = client.screen == null ? "null" : client.screen.getClass().getName();
+        Screen currentScreen = client.gui.screen();
+        String screenName = currentScreen == null ? "null" : currentScreen.getClass().getName();
         CleanKeyStrokes.LOGGER.info(
                 "First Clean Keystrokes HUD render reached. scaled={}x{}, hudScale={}, position={}, origin=({}, {}), showInputs={}, showClicks={}, hideGui={}, debugHud={}, screen={}, configPath='{}', showSneakSprintRow={}, tickSyncedKeyPresses={}, rainbowKeyNormal={}, rainbowKeyPressed={}, rainbowBackgroundNormal={}, rainbowBackgroundPressed={}, rainbowKeyTextShadow={}, rainbowKeyPressedTextShadow={}, keyTextShadow={}, keyPressedTextShadow={}, useCustomTextShadowColor={}, preset={}, colors={key={}, bg={}, pressedKey={}, pressedBg={}, shadow={}, pressedShadow={}}",
                 client.getWindow().getGuiScaledWidth(),
@@ -133,7 +196,7 @@ public class KeystrokeHud {
                 lay.originY,
                 showInputs,
                 showClicks,
-                client.options.hideGui,
+                isHudHidden(client),
                 client.getDebugOverlay().showDebugScreen(),
                 screenName,
                 KeystrokeConfig.getPath(),
