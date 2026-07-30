@@ -15,11 +15,9 @@ public class CleanKeyStrokes implements ClientModInitializer {
 	@Override
 	public void onInitializeClient() {
 		KeystrokeHud hud = new KeystrokeHud();
-		HudElementRegistry.attachElementAfter(
-				Identifier.of("minecraft", "misc_overlays"),
+		HudElementRegistry.addLast(
 				Identifier.of(MOD_ID, "keystroke_hud"),
 				hud::onHudRender
 		);
-		LOGGER.info("Registered keystroke HUD with addLast at the end of the HUD render chain.");
 	}
 }

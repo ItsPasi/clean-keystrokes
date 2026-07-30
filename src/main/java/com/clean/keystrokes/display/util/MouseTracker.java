@@ -4,7 +4,10 @@ import net.minecraft.client.MinecraftClient;
 
 public class MouseTracker {
 
-    private static final int TRAIL_LENGTH = 100;
+    private static final int TRAIL_CAPACITY = 100;
+    private static final int MAX_SAMPLES_PER_UPDATE = 24;
+    private static final double TRAIL_SAMPLE_SPACING_PX = 1.0;
+    private static final double MIN_SAMPLE_DISTANCE_PX = 0.01;
 
     private static double smoothX = 0;
     private static double smoothY = 0;
@@ -15,9 +18,11 @@ public class MouseTracker {
     private static double centerPxX = 0;
     private static double centerPxY = 0;
 
-    private static final double[] trailPxX    = new double[TRAIL_LENGTH];
-    private static final double[] trailPxY    = new double[TRAIL_LENGTH];
-    private static final long[]   trailTimeMs = new long[TRAIL_LENGTH];
+    private static final double[] trailPxX = new double[TRAIL_CAPACITY];
+    private static final double[] trailPxY = new double[TRAIL_CAPACITY];
+    private static final long[] trailTimeMs = new long[TRAIL_CAPACITY];
+    private static int trailHead = -1;
+    private static int trailCount = 0;
     private static boolean initialized = false;
 
     private static double pendingDx = 0;
@@ -26,8 +31,8 @@ public class MouseTracker {
 
     // ── Tuneable constants ────────────────────────────────────────
     private static final double SENSITIVITY = 0.02;
-    private static final double DECAY       = 0.8;
-    private static final float  LERP_SPEED  = 0.5f;
+    private static final double DECAY = 0.8;
+    private static final float LERP_SPEED = 0.5f;
 
     public static void onMouseMove(double dx, double dy) {
         pendingDx += dx;
@@ -50,12 +55,12 @@ public class MouseTracker {
         pendingDy = 0;
     }
 
-    public static void updateRenderPos(int areaX, int areaY, int areaW, int areaH, int dotSizeGui, float delta) {
-        double scale   = MinecraftClient.getInstance().getWindow().getScaleFactor();
+    public static void updateRenderPos(int areaX, int areaY, int areaW, int areaH, int dotSizeGui, float delta, long now) {
+        double scale = MinecraftClient.getInstance().getWindow().getScaleFactor();
         double radiusX = (areaW - dotSizeGui) * scale / 2.0;
         double radiusY = (areaH - dotSizeGui) * scale / 2.0;
 
-        aspectRatio = radiusX / radiusY;
+        aspectRatio = radiusY == 0.0 ? 1.0 : radiusX / radiusY;
 
         centerPxX = Math.floor((areaX + areaW / 2.0) * scale + 0.5);
         centerPxY = Math.floor((areaY + areaH / 2.0) * scale + 0.5);
@@ -63,23 +68,16 @@ public class MouseTracker {
         double targetPxX = Math.floor(centerPxX + smoothX * radiusX + 0.5);
         double targetPxY = Math.floor(centerPxY + smoothY * radiusY + 0.5);
 
-        double prevRenderPxX;
-        double prevRenderPxY;
         if (!initialized) {
-            renderPxX     = targetPxX;
-            renderPxY     = targetPxY;
-            long now = System.currentTimeMillis();
-            for (int i = 0; i < TRAIL_LENGTH; i++) {
-                trailPxX[i]    = targetPxX;
-                trailPxY[i]    = targetPxY;
-                trailTimeMs[i] = now;
-            }
+            renderPxX = targetPxX;
+            renderPxY = targetPxY;
+            appendTrailSample(targetPxX, targetPxY, now);
             initialized = true;
             return;
         }
 
-        prevRenderPxX = renderPxX;
-        prevRenderPxY = renderPxY;
+        double prevRenderPxX = renderPxX;
+        double prevRenderPxY = renderPxY;
 
         float adjusted = 1.0f - (float) Math.pow(1.0f - LERP_SPEED, delta);
         renderPxX += (targetPxX - renderPxX) * adjusted;
@@ -88,33 +86,53 @@ public class MouseTracker {
         if (Math.abs(renderPxX - targetPxX) < 0.5) renderPxX = targetPxX;
         if (Math.abs(renderPxY - targetPxY) < 0.5) renderPxY = targetPxY;
 
-        double dx   = renderPxX - prevRenderPxX;
-        double dy   = renderPxY - prevRenderPxY;
-        double dist = Math.sqrt(dx * dx + dy * dy);
-        int steps   = Math.max(1, (int) Math.ceil(dist));
-        long now    = System.currentTimeMillis();
+        double dx = renderPxX - prevRenderPxX;
+        double dy = renderPxY - prevRenderPxY;
+        double dist = Math.hypot(dx, dy);
+        if (dist < MIN_SAMPLE_DISTANCE_PX) {
+            return;
+        }
 
-        for (int s = steps - 1; s >= 0; s--) {
-            double t  = (double) s / steps;
-            double px = prevRenderPxX + dx * (1.0 - t);
-            double py = prevRenderPxY + dy * (1.0 - t);
-            for (int i = TRAIL_LENGTH - 1; i > 0; i--) {
-                trailPxX[i]    = trailPxX[i - 1];
-                trailPxY[i]    = trailPxY[i - 1];
-                trailTimeMs[i] = trailTimeMs[i - 1];
-            }
-            trailPxX[0]    = px;
-            trailPxY[0]    = py;
-            trailTimeMs[0] = now;
+        int steps = Math.clamp((int) Math.ceil(dist / TRAIL_SAMPLE_SPACING_PX), 1,
+                MAX_SAMPLES_PER_UPDATE
+        );
+        for (int s = 1; s <= steps; s++) {
+            double t = (double) s / steps;
+            appendTrailSample(
+                    prevRenderPxX + dx * t,
+                    prevRenderPxY + dy * t,
+                    now
+            );
         }
     }
 
-    public static double getRenderPxX()        { return renderPxX; }
-    public static double getRenderPxY()        { return renderPxY; }
-    public static double getCenterPxX()        { return centerPxX; }
-    public static double getCenterPxY()        { return centerPxY; }
-    public static double getTrailPxX(int i)    { return trailPxX[i]; }
-    public static double getTrailPxY(int i)    { return trailPxY[i]; }
-    public static long   getTrailTimeMs(int i) { return trailTimeMs[i]; }
-    public static int    getTrailLength()      { return TRAIL_LENGTH; }
+    private static void appendTrailSample(double pxX, double pxY, long timeMs) {
+        trailHead = (trailHead + 1) % TRAIL_CAPACITY;
+        trailPxX[trailHead] = pxX;
+        trailPxY[trailHead] = pxY;
+        trailTimeMs[trailHead] = timeMs;
+        if (trailCount < TRAIL_CAPACITY) {
+            trailCount++;
+        }
+    }
+
+    private static int trailIndex(int newestFirstIndex) {
+        if (newestFirstIndex < 0 || newestFirstIndex >= trailCount) {
+            throw new IndexOutOfBoundsException(
+                    "Trail index: " + newestFirstIndex + ", size: " + trailCount
+            );
+        }
+        int index = trailHead - newestFirstIndex;
+        return index < 0 ? index + TRAIL_CAPACITY : index;
+    }
+
+    public static double getRenderPxX() { return renderPxX; }
+    public static double getRenderPxY() { return renderPxY; }
+    public static double getCenterPxX() { return centerPxX; }
+    public static double getCenterPxY() { return centerPxY; }
+    public static double getTrailPxX(int i) { return trailPxX[trailIndex(i)]; }
+    public static double getTrailPxY(int i) { return trailPxY[trailIndex(i)]; }
+    public static long getTrailTimeMs(int i) { return trailTimeMs[trailIndex(i)]; }
+    public static int getTrailLength() { return trailCount; }
+    public static int getTrailCapacity() { return TRAIL_CAPACITY; }
 }

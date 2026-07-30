@@ -120,10 +120,6 @@ public class KeystrokeConfig {
         return instance;
     }
 
-    public static Path getPath() {
-        return PATH;
-    }
-
     public static void load() {
         if (Files.exists(PATH)) {
             try {
