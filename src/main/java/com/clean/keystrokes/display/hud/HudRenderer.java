@@ -7,12 +7,28 @@ import net.minecraft.client.gui.DrawContext;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public final class HudRenderer {
 
     private HudRenderer() {}
 
-    // Fade duration in ms
     private static final float TRAIL_FADE_MS = 300f;
+    private static final int MAX_DRAWN_TRAIL_POINTS = 48;
+    private static final int NUMBER_CACHE_MAX = 99;
+
+    private static final Map<String, Text> TEXT_CACHE = new HashMap<>();
+    private static final String[] NUMBER_STRINGS = new String[NUMBER_CACHE_MAX + 1];
+    private static final Text[] NUMBER_TEXTS = new Text[NUMBER_CACHE_MAX + 1];
+
+    static {
+        for (int i = 0; i <= NUMBER_CACHE_MAX; i++) {
+            String value = Integer.toString(i);
+            NUMBER_STRINGS[i] = value;
+            NUMBER_TEXTS[i] = Text.literal(value);
+        }
+    }
 
     public static void drawTexture(DrawContext ctx, Identifier tex, int x, int y, int w, int h, int color) {
         RenderSystem.enableBlend();
@@ -28,20 +44,32 @@ public final class HudRenderer {
         var tr = MinecraftClient.getInstance().textRenderer;
         int textW = (int) Math.round(tr.getWidth(label) * textScale);
         int textH = (int) Math.round(tr.fontHeight * textScale);
-        drawText(ctx, label, x + (w - textW + 1) / 2, y + (h - textH) / 2 + Math.max(1, (int) Math.round(textScale)), fgColor, shadow, shadowColor, customShadowColor, textScale);
+        drawText(ctx, cachedText(label), x + (w - textW + 1) / 2, y + (h - textH) / 2 + Math.max(1, (int) Math.round(textScale)), fgColor, shadow, shadowColor, customShadowColor, textScale);
     }
 
     public static void drawCenteredNumber(DrawContext ctx, int value, int x, int y, int w, int h, int color, boolean shadow, int shadowColor, boolean customShadowColor, double textScale) {
         var tr = MinecraftClient.getInstance().textRenderer;
-        String str = String.valueOf(value);
+        String str;
+        Text component;
+        if (value >= 0 && value <= NUMBER_CACHE_MAX) {
+            str = NUMBER_STRINGS[value];
+            component = NUMBER_TEXTS[value];
+        } else {
+            str = Integer.toString(value);
+            component = cachedText(str);
+        }
+
         int textW = (int) Math.round(tr.getWidth(str) * textScale);
         int textH = (int) Math.round(tr.fontHeight * textScale);
-        drawText(ctx, str, x + (w - textW + 1) / 2, y + (h - textH) / 2 + Math.max(1, (int) Math.round(textScale)), color, shadow, shadowColor, customShadowColor, textScale);
+        drawText(ctx, component, x + (w - textW + 1) / 2, y + (h - textH) / 2 + Math.max(1, (int) Math.round(textScale)), color, shadow, shadowColor, customShadowColor, textScale);
     }
 
-    private static void drawText(DrawContext ctx, String text, int x, int y, int color, boolean shadow, int shadowColor, boolean customShadowColor, double textScale) {
+    private static Text cachedText(String text) {
+        return TEXT_CACHE.computeIfAbsent(text, Text::literal);
+    }
+
+    private static void drawText(DrawContext ctx, Text component, int x, int y, int color, boolean shadow, int shadowColor, boolean customShadowColor, double textScale) {
         var tr = MinecraftClient.getInstance().textRenderer;
-        Text component = Text.literal(text);
 
         if (Math.abs(textScale - 1.0) < 0.001) {
             if (!shadow) {
@@ -59,7 +87,6 @@ public final class HudRenderer {
         }
 
         float s = (float) textScale;
-
         ctx.getMatrices().push();
         ctx.getMatrices().translate((float) x, (float) y, 0.0f);
         ctx.getMatrices().scale(s, s, 1.0f);
@@ -76,27 +103,47 @@ public final class HudRenderer {
         ctx.getMatrices().pop();
     }
 
-    public static void drawDotWithTrail(DrawContext ctx, int dotSize, int fgColor, boolean shadow, int shadowColor, boolean customShadowColor) {
-        double scale    = MinecraftClient.getInstance().getWindow().getScaleFactor();
-        int    trailLen = MouseTracker.getTrailLength();
-        long   now      = System.currentTimeMillis();
+    public static void drawDotWithTrail(DrawContext ctx, int dotSize, int fgColor, boolean shadow, int shadowColor, boolean customShadowColor, long now) {
+        double scale = MinecraftClient.getInstance().getWindow().getScaleFactor();
+        int trailLen = MouseTracker.getTrailLength();
 
-        for (int i = trailLen - 1; i >= 1; i--) {
-            long age       = now - MouseTracker.getTrailTimeMs(i);
-            float timeFrac = 1f - Math.min(age / TRAIL_FADE_MS, 1f);
-            float posFrac  = 1f - (float) i / trailLen;
-            float frac     = timeFrac * posFrac;
-            if (frac <= 0) continue;
-            int trailColor = (((int)(frac * 0.1f * 255)) << 24) | (fgColor & 0x00FFFFFF);
-            drawDotAtWithShadow(ctx, MouseTracker.getTrailPxX(i), MouseTracker.getTrailPxY(i), scale, dotSize, trailColor, shadow, shadowColor, customShadowColor);
+        int activeTrailPoints = 0;
+        for (int i = 1; i < trailLen; i++) {
+            if (now - MouseTracker.getTrailTimeMs(i) >= TRAIL_FADE_MS) break;
+            activeTrailPoints++;
         }
 
-        // Static center dot at half opacity
-        int centerColor = ((((fgColor >> 24) & 0xFF) / 2) << 24) | (fgColor & 0x00FFFFFF);
-        drawDotAtWithShadow(ctx, MouseTracker.getCenterPxX(), MouseTracker.getCenterPxY(), scale, dotSize, centerColor, shadow, shadowColor, customShadowColor);
+        int pointsToDraw = Math.min(activeTrailPoints, MAX_DRAWN_TRAIL_POINTS);
+        int trailCapacity = MouseTracker.getTrailCapacity();
 
-        // Main moving dot
-        drawDotAtWithShadow(ctx, MouseTracker.getRenderPxX(), MouseTracker.getRenderPxY(), scale, dotSize, fgColor, shadow, shadowColor, customShadowColor);
+        for (int bucket = pointsToDraw - 1; bucket >= 0; bucket--) {
+            int first = 1 + bucket * activeTrailPoints / pointsToDraw;
+            int last = (bucket + 1) * activeTrailPoints / pointsToDraw;
+            int i = (first + last) / 2;
+            int representedSamples = last - first + 1;
+
+            long age = now - MouseTracker.getTrailTimeMs(i);
+            float timeFrac = 1f - Math.min(age / TRAIL_FADE_MS, 1f);
+            float posFrac = 1f - (float) i / trailCapacity;
+            float frac = timeFrac * posFrac;
+            if (frac <= 0) continue;
+
+            float baseAlpha = frac * 0.1f;
+            float compensatedAlpha = 1f - (float) Math.pow(1f - baseAlpha, representedSamples);
+            int alpha = Math.max(0, Math.min(255, Math.round(compensatedAlpha * 255f)));
+            if (alpha == 0) continue;
+
+            int trailColor = (alpha << 24) | (fgColor & 0x00FFFFFF);
+            drawDotAtWithShadow(ctx, MouseTracker.getTrailPxX(i), MouseTracker.getTrailPxY(i),
+                    scale, dotSize, trailColor, shadow, shadowColor, customShadowColor);
+        }
+
+        int centerColor = ((((fgColor >> 24) & 0xFF) / 2) << 24) | (fgColor & 0x00FFFFFF);
+        drawDotAtWithShadow(ctx, MouseTracker.getCenterPxX(), MouseTracker.getCenterPxY(),
+                scale, dotSize, centerColor, shadow, shadowColor, customShadowColor);
+
+        drawDotAtWithShadow(ctx, MouseTracker.getRenderPxX(), MouseTracker.getRenderPxY(),
+                scale, dotSize, fgColor, shadow, shadowColor, customShadowColor);
     }
 
     private static void drawDotAtWithShadow(DrawContext ctx, double pxX, double pxY, double scale, int size, int color, boolean shadow, int shadowColor, boolean customShadowColor) {
@@ -119,8 +166,7 @@ public final class HudRenderer {
     }
 
     private static int multiplyAlpha(int color, int alpha) {
-        int colorAlpha = (color >>> 24) & 0xFF;
-        return colorAlpha * alpha / 255;
+        return ((color >>> 24) & 0xFF) * alpha / 255;
     }
 
     private static int withAlpha(int color, int alpha) {
@@ -130,8 +176,8 @@ public final class HudRenderer {
     private static void drawDotAt(DrawContext ctx, double pxX, double pxY, double scale, int size, int color) {
         double sx = Math.round(pxX - size * scale / 2.0 - 0.5) / scale;
         double sy = Math.round(pxY - size * scale / 2.0 - 0.5) / scale;
-        int    bx = (int) Math.floor(sx);
-        int    by = (int) Math.floor(sy);
+        int bx = (int) Math.floor(sx);
+        int by = (int) Math.floor(sy);
 
         float fx = (float) (sx - bx);
         float fy = (float) (sy - by);
