@@ -10,10 +10,9 @@ public class CpsCounter {
         clicks.addLast(System.currentTimeMillis());
     }
 
-    public int getCps() {
-        long now = System.currentTimeMillis();
+    public int getCps(long now) {
         while (!clicks.isEmpty() && now - clicks.peekFirst() > 1000) {
-            clicks.pollFirst();
+            clicks.removeFirst();
         }
         return clicks.size();
     }
