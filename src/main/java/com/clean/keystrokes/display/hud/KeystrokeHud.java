@@ -5,6 +5,7 @@ import com.clean.keystrokes.display.util.CpsCounter;
 import com.clean.keystrokes.display.util.KeyPressAnimator;
 import com.clean.keystrokes.display.util.MouseTracker;
 import com.clean.keystrokes.display.util.RainbowColor;
+import com.clean.keystrokes.mixin.KeyMappingAccessor;
 import com.mojang.blaze3d.platform.InputConstants;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.KeyMapping;
@@ -13,7 +14,6 @@ import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.debug.DebugScreenEntries;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
-import org.lwjgl.glfw.GLFW;
 
 import java.util.IdentityHashMap;
 
@@ -146,8 +146,6 @@ public class KeystrokeHud {
                 frameNow
         );
 
-        long win = client.getWindow().handle();
-
         // WASD
         drawMovementKey(ctx, cfg, lay.col1, lay.rowW, kS, kS,
                 client.options.keyUp, HudTextures.KEY_W, KeyPressAnimator.W,
@@ -195,9 +193,9 @@ public class KeystrokeHud {
 
         // Mouse Row
         boolean lmbDown = showClicks
-                && GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_LEFT) == GLFW.GLFW_PRESS;
-        boolean rmbDown = showClicks
-                && GLFW.glfwGetMouseButton(win, GLFW.GLFW_MOUSE_BUTTON_RIGHT) == GLFW.GLFW_PRESS;
+            && client.mouseHandler.isLeftPressed();
+        boolean rmbDown = showClicks &&
+                client.mouseHandler.isRightPressed();
 
         float lmbT = anim
                 ? KeyPressAnimator.update(KeyPressAnimator.LMB, lmbDown, delta)
@@ -383,25 +381,25 @@ public class KeystrokeHud {
             return cached;
         }
 
-        int code = InputConstants.getKey(saveString).getValue();
-        String label = switch (code) {
-            case GLFW.GLFW_KEY_SPACE -> "SPC";
-            case GLFW.GLFW_KEY_LEFT_SHIFT, GLFW.GLFW_KEY_RIGHT_SHIFT -> "SNK";
-            case GLFW.GLFW_KEY_LEFT_CONTROL, GLFW.GLFW_KEY_RIGHT_CONTROL -> "CTL";
-            case GLFW.GLFW_KEY_LEFT_ALT, GLFW.GLFW_KEY_RIGHT_ALT -> "ALT";
-            case GLFW.GLFW_KEY_UP -> "UP";
-            case GLFW.GLFW_KEY_DOWN -> "DN";
-            case GLFW.GLFW_KEY_LEFT -> "LFT";
-            case GLFW.GLFW_KEY_RIGHT -> "RGT";
+        var code = InputConstants.getKey(saveString);
+        String label = switch (code.getValue()) {
+            case InputConstants.KEY_SPACE -> "SPC";
+            case InputConstants.KEY_LSHIFT -> "SNK";
+            case InputConstants.KEY_LCONTROL -> "CTL";
+            case InputConstants.KEY_LALT -> "ALT";
+            case InputConstants.KEY_UP -> "UP";
+            case InputConstants.KEY_DOWN -> "DN";
+            case InputConstants.KEY_LEFT -> "LFT";
+            case InputConstants.KEY_RIGHT -> "RGT";
             default -> {
-                String name = GLFW.glfwGetKeyName(code, 0);
-                yield (name != null && !name.isEmpty())
+                String name = code.getDisplayName().getString();
+                yield !name.isEmpty()
                         ? name.toUpperCase()
                         : "?";
             }
         };
 
-        KeyInfo updated = new KeyInfo(saveString, code, label);
+        KeyInfo updated = new KeyInfo(saveString, code.getValue(), label);
         keyInfoCache.put(key, updated);
         return updated;
     }
@@ -444,11 +442,7 @@ public class KeystrokeHud {
     }
 
     private boolean isPhysicalKeyDown(KeyMapping key) {
-        int code = getKeyInfo(key).code();
-        if (code < 0) return false;
-
-        long win = Minecraft.getInstance().getWindow().handle();
-        return GLFW.glfwGetKey(win, code) == GLFW.GLFW_PRESS;
+        return InputConstants.isKeyDown(((KeyMappingAccessor) key).key().getValue());
     }
 
     private record KeyInfo(String saveString, int code, String label) {}
